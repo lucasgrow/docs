@@ -1,0 +1,275 @@
+---
+title: 'Instalação'
+description: 'Configure o Eleva AI em seu ambiente local'
+icon: 'download'
+---
+
+# Instalação do Eleva AI
+
+Este guia irá ajudá-lo a configurar o Eleva AI em seu ambiente de desenvolvimento local.
+
+## 📋 Pré-requisitos
+
+<Warning>
+  Certifique-se de ter todos os pré-requisitos instalados antes de prosseguir
+</Warning>
+
+### Software Necessário
+
+<Tabs>
+  <Tab title="Obrigatório">
+    - **Node.js** 18.17 ou superior
+    - **npm** 9.0 ou superior
+    - **Git** 2.0 ou superior
+    - **PostgreSQL** 14+ (via Supabase)
+    - **Redis** 6.0+ (local ou cloud)
+  </Tab>
+  <Tab title="Recomendado">
+    - **Docker** para containers
+    - **VS Code** com extensões TypeScript
+    - **Postman** para testar APIs
+    - **TablePlus** para visualizar banco de dados
+  </Tab>
+</Tabs>
+
+### Contas e Serviços
+
+<CardGroup cols={2}>
+  <Card title="Supabase" icon="database">
+    Banco de dados PostgreSQL gerenciado
+    [Criar conta →](https://supabase.com)
+  </Card>
+  <Card title="Evolution API" icon="whatsapp">
+    API para integração WhatsApp
+    [Documentação →](https://doc.evolution-api.com)
+  </Card>
+  <Card title="OpenAI" icon="brain">
+    Para processamento com GPT-4
+    [Obter API Key →](https://platform.openai.com)
+  </Card>
+  <Card title="Redis Cloud" icon="server">
+    Cache e filas (opcional local)
+    [Criar instância →](https://redis.com/cloud)
+  </Card>
+</CardGroup>
+
+## 🚀 Instalação Rápida
+
+<Steps>
+  <Step title="Clone o repositório">
+    ```bash
+    # Via HTTPS
+    git clone https://github.com/lucasgrow/eleva-ai-minimal.git
+    
+    # Via SSH
+    git clone git@github.com:lucasgrow/eleva-ai-minimal.git
+    
+    # Entre no diretório
+    cd eleva-ai-minimal
+    ```
+  </Step>
+  
+  <Step title="Instale as dependências">
+    ```bash
+    # Instalar dependências do projeto
+    npm install
+    
+    # Ou se preferir yarn
+    yarn install
+    ```
+  </Step>
+  
+  <Step title="Configure as variáveis de ambiente">
+    ```bash
+    # Copie o arquivo de exemplo
+    cp .env.example .env.local
+    
+    # Edite o arquivo com suas credenciais
+    nano .env.local
+    ```
+  </Step>
+  
+  <Step title="Configure o banco de dados">
+    ```bash
+    # Execute as migrations do Supabase
+    npm run db:migrate
+    
+    # (Opcional) Popule com dados de teste
+    npm run db:seed
+    ```
+  </Step>
+  
+  <Step title="Inicie o servidor de desenvolvimento">
+    ```bash
+    # Modo desenvolvimento com hot reload
+    npm run dev
+    
+    # Com Turbopack (mais rápido)
+    npm run dev:turbo
+    ```
+  </Step>
+</Steps>
+
+## 🔧 Configuração Detalhada
+
+### 1. Configuração do Supabase
+
+<Accordion title="Criar projeto no Supabase">
+  1. Acesse [Supabase Dashboard](https://app.supabase.com)
+  2. Clique em "New Project"
+  3. Configure:
+     - **Name**: eleva-ai-production
+     - **Database Password**: (anote com segurança)
+     - **Region**: Escolha a mais próxima
+  4. Aguarde a criação (pode levar alguns minutos)
+</Accordion>
+
+<Accordion title="Obter credenciais">
+  No dashboard do Supabase:
+  1. Vá em Settings → API
+  2. Copie:
+     - `URL` → `NEXT_PUBLIC_SUPABASE_URL`
+     - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     - `service_role` → `SUPABASE_SERVICE_ROLE_KEY`
+  3. Vá em Settings → Database
+  4. Copie a connection string → `SUPABASE_DATABASE_URL`
+</Accordion>
+
+### 2. Configuração do Redis
+
+<CodeGroup>
+  ```bash Redis Local
+  # Instalar Redis localmente (macOS)
+  brew install redis
+  
+  # Iniciar serviço
+  brew services start redis
+  
+  # Verificar se está rodando
+  redis-cli ping
+  # Deve retornar: PONG
+  
+  # URL para .env.local
+  REDIS_URL=redis://localhost:6379
+  ```
+  
+  ```bash Redis Cloud
+  # Criar conta em redis.com/cloud
+  # Criar database gratuito
+  # Copiar connection string
+  
+  # Formato da URL
+  REDIS_URL=redis://default:password@host:port
+  ```
+</CodeGroup>
+
+### 3. Configuração da Evolution API
+
+<Note>
+  A Evolution API pode ser auto-hospedada ou usar um serviço gerenciado
+</Note>
+
+<Tabs>
+  <Tab title="Docker Local">
+    ```bash
+    # Criar docker-compose.yml
+    version: '3.8'
+    services:
+      evolution:
+        image: atendai/evolution-api:latest
+        ports:
+          - "8080:8080"
+        environment:
+          - DATABASE_URL=postgresql://...
+          - AUTHENTICATION_API_KEY=sua-chave-aqui
+    
+    # Executar
+    docker-compose up -d
+    ```
+  </Tab>
+  <Tab title="Serviço Gerenciado">
+    Entre em contato com um provedor de Evolution API gerenciada
+    e obtenha as credenciais:
+    - `EVOLUTION_API_URL`
+    - `EVOLUTION_API_KEY`
+  </Tab>
+</Tabs>
+
+## 🎯 Verificação da Instalação
+
+Execute o script de validação para verificar se tudo está configurado:
+
+```bash
+# Validar configuração do Supabase
+npm run validate:setup
+
+# Testar conexão com Redis
+npm run test:redis
+
+# Verificar Evolution API
+npm run test:evolution
+
+# Executar todos os testes
+npm run test:all
+```
+
+<Check>
+  Se todos os testes passarem, sua instalação está completa!
+</Check>
+
+## 🐛 Troubleshooting
+
+### Problemas Comuns
+
+<AccordionGroup>
+  <Accordion title="Erro: Cannot connect to Supabase">
+    **Solução**:
+    - Verifique se as variáveis de ambiente estão corretas
+    - Confirme que o projeto Supabase está ativo
+    - Teste a conexão: `npx supabase status`
+  </Accordion>
+  
+  <Accordion title="Erro: Redis connection refused">
+    **Solução**:
+    - Verifique se o Redis está rodando: `redis-cli ping`
+    - Para macOS: `brew services restart redis`
+    - Para Linux: `sudo systemctl restart redis`
+  </Accordion>
+  
+  <Accordion title="Erro: Evolution API timeout">
+    **Solução**:
+    - Confirme que a URL da API está correta
+    - Verifique se a API key é válida
+    - Teste manualmente: `curl YOUR_EVOLUTION_URL/instance/list`
+  </Accordion>
+  
+  <Accordion title="Erro: Module not found">
+    **Solução**:
+    ```bash
+    # Limpar cache e reinstalar
+    rm -rf node_modules package-lock.json
+    npm install
+    
+    # Ou resetar completamente
+    npm run clean:full
+    npm install
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## 📚 Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Configuração" icon="gear" href="/eleva-ai/getting-started/configuration">
+    Configure variáveis de ambiente e integrações
+  </Card>
+  <Card title="Primeiros Passos" icon="play" href="/eleva-ai/getting-started/first-steps">
+    Crie sua primeira instância WhatsApp
+  </Card>
+</CardGroup>
+
+---
+
+<Info>
+  **Dica**: Use `npm run dev:clean` para iniciar com cache limpo se encontrar problemas
+</Info>

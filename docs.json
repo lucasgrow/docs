@@ -1,127 +1,209 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
-  "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
-  },
-  "favicon": "/favicon.svg",
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Guides",
-        "groups": [
-          {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
+  "name": "Eleva AI Documentation",
+  "theme": "prism",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0F172A",
+    "light": "#3B82F6",
+    "dark": "#1E40AF",
+    "background": {
+      "dark": "#0F0F0F"
     }
   },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/lucasgrow/eleva-ai-minimal"
     }
-  }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://app.eleva-ai.com"
+  },
+  "navigation": [
+    {
+      "group": "Início",
+      "pages": [
+        "eleva-ai/overview",
+        "eleva-ai/quickstart"
+      ]
+    },
+    {
+      "group": "Primeiros Passos",
+      "pages": [
+        "eleva-ai/getting-started/installation",
+        "eleva-ai/getting-started/configuration",
+        "eleva-ai/getting-started/first-instance"
+      ]
+    },
+    {
+      "group": "Arquitetura",
+      "pages": [
+        "eleva-ai/architecture/overview",
+        "eleva-ai/architecture/system-design",
+        "eleva-ai/architecture/database-schema",
+        "eleva-ai/architecture/infrastructure",
+        "eleva-ai/architecture/federation-system"
+      ]
+    },
+    {
+      "group": "Funcionalidades",
+      "pages": [
+        {
+          "group": "WhatsApp",
+          "pages": [
+            "eleva-ai/features/whatsapp/integration",
+            "eleva-ai/features/whatsapp/evolution-api",
+            "eleva-ai/features/whatsapp/webhooks",
+            "eleva-ai/features/whatsapp/real-time"
+          ]
+        },
+        {
+          "group": "Inteligência Artificial",
+          "pages": [
+            "eleva-ai/features/ai/overview",
+            "eleva-ai/features/ai/memory-system",
+            "eleva-ai/features/ai/task-generation",
+            "eleva-ai/features/ai/multi-agent",
+            "eleva-ai/features/ai/prompts"
+          ]
+        },
+        {
+          "group": "Automação",
+          "pages": [
+            "eleva-ai/features/automation/tasks",
+            "eleva-ai/features/automation/workers",
+            "eleva-ai/features/automation/rules",
+            "eleva-ai/features/automation/scheduling"
+          ]
+        },
+        {
+          "group": "Processamento de Mídia",
+          "pages": [
+            "eleva-ai/features/media/overview",
+            "eleva-ai/features/media/documents",
+            "eleva-ai/features/media/images",
+            "eleva-ai/features/media/audio"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "eleva-ai/api/introduction",
+        "eleva-ai/api/authentication",
+        {
+          "group": "Contacts",
+          "pages": [
+            "eleva-ai/api/contacts/list",
+            "eleva-ai/api/contacts/get",
+            "eleva-ai/api/contacts/create",
+            "eleva-ai/api/contacts/update",
+            "eleva-ai/api/contacts/delete"
+          ]
+        },
+        {
+          "group": "Conversations",
+          "pages": [
+            "eleva-ai/api/conversations/list",
+            "eleva-ai/api/conversations/messages",
+            "eleva-ai/api/conversations/send",
+            "eleva-ai/api/conversations/media"
+          ]
+        },
+        {
+          "group": "Tasks",
+          "pages": [
+            "eleva-ai/api/tasks/list",
+            "eleva-ai/api/tasks/create",
+            "eleva-ai/api/tasks/execute",
+            "eleva-ai/api/tasks/approve"
+          ]
+        },
+        {
+          "group": "AI Processing",
+          "pages": [
+            "eleva-ai/api/ai/process-contact",
+            "eleva-ai/api/ai/generate-tasks",
+            "eleva-ai/api/ai/analyze-document",
+            "eleva-ai/api/ai/bootstrap"
+          ]
+        },
+        {
+          "group": "Webhooks",
+          "pages": [
+            "eleva-ai/api/webhooks/overview",
+            "eleva-ai/api/webhooks/events",
+            "eleva-ai/api/webhooks/security"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Guias",
+      "pages": [
+        "eleva-ai/guides/deployment",
+        "eleva-ai/guides/docker",
+        "eleva-ai/guides/monitoring",
+        "eleva-ai/guides/performance",
+        "eleva-ai/guides/security",
+        "eleva-ai/guides/troubleshooting"
+      ]
+    },
+    {
+      "group": "Referência Técnica",
+      "pages": [
+        "eleva-ai/reference/environment-variables",
+        "eleva-ai/reference/database-migrations",
+        "eleva-ai/reference/redis-cache",
+        "eleva-ai/reference/error-codes",
+        "eleva-ai/reference/glossary"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/lucasgrow",
+    "linkedin": "https://linkedin.com/company/lucasgrow"
+  },
+  "analytics": {
+    "ga4": {
+      "measurementId": "G-XXXXXXXXXX"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "search": {
+    "prompt": "Pesquisar na documentação..."
+  },
+  "metadata": {
+    "og:title": "Eleva AI - Documentação",
+    "og:description": "Documentação completa da plataforma Eleva AI para automação WhatsApp Business",
+    "og:image": "/images/og-image.png",
+    "twitter:card": "summary_large_image"
+  },
+  "versions": [
+    "v1"
+  ],
+  "api": {
+    "baseUrl": "https://api.eleva-ai.com",
+    "playground": {
+      "mode": "simple"
+    }
+  },
+  "openapi": "/eleva-ai/api/openapi.json",
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "/eleva-ai/overview"
+    }
+  ]
 }
