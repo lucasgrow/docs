@@ -1,0 +1,526 @@
+---
+title: 'Sistema de Federação Evolution'
+description: 'Gerenciamento inteligente de múltiplos bancos Evolution API com load balancing e failover automático'
+icon: 'network-wired'
+---
+
+# Sistema de Federação Evolution
+
+O Sistema de Federação é uma das inovações mais importantes do Eleva AI, permitindo gerenciar múltiplos bancos Evolution API de forma transparente, com load balancing automático, failover e isolamento entre clientes.
+
+## Visão Geral
+
+<Info>
+**Por que Federation?** Em ambientes empresariais, cada cliente pode ter suas instâncias WhatsApp em servidores Evolution diferentes. O sistema de federação abstrai essa complexidade, permitindo que a aplicação funcione como se houvesse apenas um banco de dados.
+</Info>
+
+### Problema Resolvido
+
+Antes do sistema de federação:
+- ❌ Cada cliente precisava de uma instalação separada
+- ❌ Configurações manuais para cada Evolution server
+- ❌ Sem failover automático entre servidores
+- ❌ Dificuldade para escalar horizontalmente
+- ❌ Manutenção complexa de múltiplas configurações
+
+Com o sistema de federação:
+- ✅ Single codebase para múltiplos clientes
+- ✅ Roteamento automático de queries
+- ✅ Load balancing inteligente
+- ✅ Failover transparente
+- ✅ Configuração centralizada no Supabase
+- ✅ Isolamento perfeito entre clientes
+
+## Arquitetura do Sistema
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        API[API Routes]
+        LOGIC[Business Logic]
+    end
+    
+    subgraph "Federation Layer"
+        ROUTER[Query Router]
+        LB[Load Balancer]
+        CACHE[Config Cache]
+        FAILOVER[Failover Manager]
+    end
+    
+    subgraph "Configuration Store"
+        SUPABASE[(Supabase)]
+        INSTANCES[instances table]
+        EVO_DBS[evolution_databases table]
+    end
+    
+    subgraph "Evolution Databases"
+        DB1[(Evolution DB 1)]
+        DB2[(Evolution DB 2)]
+        DB3[(Evolution DB N)]
+    end
+    
+    subgraph "Evolution APIs"
+        API1[Evolution API 1]
+        API2[Evolution API 2]
+        API3[Evolution API N]
+    end
+    
+    API --> LOGIC
+    LOGIC --> ROUTER
+    ROUTER --> LB
+    ROUTER --> CACHE
+    LB --> FAILOVER
+    
+    CACHE --> SUPABASE
+    SUPABASE --> INSTANCES
+    SUPABASE --> EVO_DBS
+    
+    FAILOVER --> DB1
+    FAILOVER --> DB2
+    FAILOVER --> DB3
+    
+    ROUTER --> API1
+    ROUTER --> API2
+    ROUTER --> API3
+```
+
+## Componentes Principais
+
+### 1. Configuração Centralizada
+
+Todas as configurações ficam armazenadas no Supabase:
+
+<Tabs>
+  <Tab title="evolution_databases">
+    ```sql
+    CREATE TABLE evolution_databases (
+      id UUID PRIMARY KEY,
+      name VARCHAR NOT NULL,
+      database_url TEXT NOT NULL,
+      api_url TEXT NOT NULL,
+      api_key TEXT NOT NULL,
+      ws_url TEXT,
+      is_primary BOOLEAN DEFAULT false,
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    ```
+    
+    **Campos principais:**
+    - `database_url`: Connection string PostgreSQL do Evolution
+    - `api_url`: URL da API Evolution (ex: https://api.evolution.com)
+    - `api_key`: Chave de autenticação da API
+    - `ws_url`: WebSocket URL para conexão em tempo real
+    - `is_primary`: Indica se é o banco principal para este cliente
+  </Tab>
+  
+  <Tab title="instances">
+    ```sql
+    CREATE TABLE instances (
+      id UUID PRIMARY KEY,
+      account_id UUID REFERENCES accounts(id),
+      evolution_database_id UUID REFERENCES evolution_databases(id),
+      evolution_instance_name VARCHAR NOT NULL,
+      evolution_instance_id INTEGER NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    ```
+    
+    **Relacionamentos:**
+    - Cada instância WhatsApp pertence a uma conta (`account_id`)
+    - Cada instância é associada a um banco Evolution específico
+    - `evolution_instance_name`: Nome único da instância (ex: "clinica-abc")
+    - `evolution_instance_id`: ID numérico no Evolution
+  </Tab>
+</Tabs>
+
+### 2. Query Router
+
+O roteador é responsável por direcionar consultas para o banco correto:
+
+```typescript
+// lib/evolution-federation.ts
+
+export async function queryByInstance(
+  instanceParam: string,
+  query: string,
+  params: any[] = []
+): Promise<QueryResult> {
+  
+  // 1. Resolver instância (aceita UUID ou nome)
+  const resolved = await resolveInstanceParam(instanceParam)
+  if (!resolved) {
+    throw new Error(`Instance not found: ${instanceParam}`)
+  }
+  
+  // 2. Obter configuração do banco Evolution
+  const dbConfig = await getEvolutionDatabaseConfig(
+    resolved.evolutionDatabaseId
+  )
+  
+  // 3. Executar query no banco correto
+  const pool = getOrCreatePool(dbConfig.database_url)
+  return await pool.query(query, params)
+}
+```
+
+### 3. Load Balancing
+
+O sistema implementa múltiplas estratégias de balanceamento:
+
+<CardGroup cols={2}>
+  <Card title="Round Robin" icon="rotate">
+    Distribui queries sequencialmente entre bancos disponíveis
+    ```typescript
+    strategy: 'round-robin'
+    ```
+  </Card>
+  
+  <Card title="Weighted" icon="balance-scale">
+    Considera capacidade e latência de cada servidor
+    ```typescript
+    strategy: 'weighted'
+    weights: {
+      'evolution-db-1': 0.6,
+      'evolution-db-2': 0.4
+    }
+    ```
+  </Card>
+</CardGroup>
+
+### 4. Failover Automático
+
+Quando um banco Evolution fica indisponível:
+
+<Steps>
+  <Step title="Detecção da Falha">
+    Sistema monitora timeouts e errors de conexão
+  </Step>
+  
+  <Step title="Marcação como Indisponível">
+    Banco é temporariamente removido do pool
+  </Step>
+  
+  <Step title="Redirecionamento">
+    Queries são redirecionadas para banco secundário
+  </Step>
+  
+  <Step title="Health Check">
+    Verifica periodicamente se o banco voltou online
+  </Step>
+  
+  <Step title="Recuperação">
+    Banco é reintegrado ao pool quando disponível
+  </Step>
+</Steps>
+
+## Uso Prático
+
+### Queries de Banco
+
+O uso é transparente para os desenvolvedores:
+
+```typescript
+// ❌ ANTES (conexão direta - não usar!)
+const client = new Client({
+  connectionString: process.env.DATABASE_URL
+})
+const result = await client.query('SELECT * FROM "Message"')
+
+// ✅ DEPOIS (com federação)
+import { queryByInstance } from '@/lib/evolution-federation'
+
+const result = await queryByInstance(
+  instanceId, // ou instanceName
+  'SELECT * FROM "Message" WHERE "instanceId" = $1',
+  [instanceId]
+)
+```
+
+### APIs Evolution
+
+Para chamadas à API Evolution:
+
+```typescript
+// ❌ ANTES (configuração hardcoded - não usar!)
+const response = await fetch(`${process.env.EVOLUTION_API_URL}/endpoint`, {
+  headers: { 'apikey': process.env.EVOLUTION_API_KEY }
+})
+
+// ✅ DEPOIS (com federação)
+import { getInstanceApiConfig } from '@/lib/evolution-federation'
+
+const config = await getInstanceApiConfig(instanceName)
+const response = await fetch(`${config.apiUrl}/endpoint`, {
+  headers: { 'apikey': config.apiKey }
+})
+```
+
+### WebSocket Connections
+
+Para conexões em tempo real:
+
+```typescript
+import { getInstanceWebSocketConfig } from '@/lib/evolution-federation'
+
+const wsConfig = await getInstanceWebSocketConfig(instanceName)
+const ws = new WebSocket(wsConfig.wsUrl, {
+  headers: { 'apikey': wsConfig.apiKey }
+})
+```
+
+## Configuração de Produção
+
+### 1. Setup Inicial
+
+No Supabase, configure os bancos Evolution disponíveis:
+
+```sql
+-- Adicionar banco Evolution principal
+INSERT INTO evolution_databases (
+  id,
+  name, 
+  database_url,
+  api_url,
+  api_key,
+  ws_url,
+  is_primary,
+  is_active
+) VALUES (
+  gen_random_uuid(),
+  'evolution-primary',
+  'postgresql://user:pass@evolution-db-1.com:5432/evolution',
+  'https://evolution-api-1.com',
+  'your-api-key-1',
+  'wss://evolution-ws-1.com',
+  true,
+  true
+);
+
+-- Adicionar banco secundário para failover
+INSERT INTO evolution_databases (
+  id,
+  name,
+  database_url, 
+  api_url,
+  api_key,
+  ws_url,
+  is_primary,
+  is_active
+) VALUES (
+  gen_random_uuid(),
+  'evolution-secondary',
+  'postgresql://user:pass@evolution-db-2.com:5432/evolution',
+  'https://evolution-api-2.com', 
+  'your-api-key-2',
+  'wss://evolution-ws-2.com',
+  false,
+  true
+);
+```
+
+### 2. Associar Instâncias
+
+Cada cliente/conta deve ter suas instâncias associadas:
+
+```sql
+-- Associar instância do cliente ao banco Evolution
+INSERT INTO instances (
+  id,
+  account_id,
+  evolution_database_id,
+  evolution_instance_name,
+  evolution_instance_id
+) VALUES (
+  gen_random_uuid(),
+  'account-uuid-here',
+  'evolution-db-uuid-here',
+  'clinica-abc-whatsapp',
+  123 -- ID numérico no Evolution
+);
+```
+
+### 3. Variáveis de Ambiente
+
+<Warning>
+**IMPORTANTE**: Com o sistema de federação, as variáveis de ambiente Evolution **NÃO devem ser usadas diretamente**. Toda configuração vem do Supabase.
+</Warning>
+
+Variáveis que **NÃO devem ser usadas**:
+```bash
+# ❌ DEPRECIADAS - NÃO USAR DIRETAMENTE
+DATABASE_URL=...
+EVOLUTION_API_URL=...
+EVOLUTION_API_KEY=...
+EVOLUTION_WS_URL=...
+```
+
+Variáveis necessárias:
+```bash
+# ✅ CONFIGURAÇÃO DO SUPABASE (única fonte da verdade)
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-key
+
+# ✅ CONFIGURAÇÕES GERAIS
+REDIS_URL=redis://localhost:6379
+OPENAI_API_KEY=your-openai-key
+GROQ_API_KEY=your-groq-key
+```
+
+## Monitoramento e Debugging
+
+### Health Checks
+
+O sistema fornece endpoints para monitorar saúde da federação:
+
+```typescript
+GET /api/debug/federation-test
+
+{
+  "status": "healthy",
+  "databases": {
+    "evolution-primary": {
+      "status": "online",
+      "latency": "45ms",
+      "last_check": "2024-09-03T10:30:00Z"
+    },
+    "evolution-secondary": {
+      "status": "online", 
+      "latency": "67ms",
+      "last_check": "2024-09-03T10:30:00Z"
+    }
+  },
+  "instances": {
+    "total": 25,
+    "active": 23,
+    "errors": 2
+  }
+}
+```
+
+### Debug Tools
+
+<CardGroup cols={2}>
+  <Card title="Federation Status" icon="heartbeat">
+    `/api/debug/federation-test` - Status de todos os bancos
+  </Card>
+  
+  <Card title="Instance Resolution" icon="search">
+    `/api/admin/federation/resolve` - Testar resolução de instâncias
+  </Card>
+  
+  <Card title="Database Monitor" icon="monitor">
+    `/api/debug/database-monitor` - Métricas de performance
+  </Card>
+  
+  <Card title="Connection Pools" icon="server">
+    `/api/debug/check-instance-status` - Status dos pools de conexão
+  </Card>
+</CardGroup>
+
+### Logging
+
+O sistema registra eventos importantes:
+
+```typescript
+// Exemplo de logs da federação
+[FEDERATION] Resolving instance: clinica-abc-whatsapp
+[FEDERATION] Found database config: evolution-primary
+[FEDERATION] Pool status: 5 active, 2 idle connections  
+[FEDERATION] Query executed in 23ms
+
+[FAILOVER] Database evolution-primary timeout detected
+[FAILOVER] Switching to evolution-secondary
+[FAILOVER] Health check scheduled in 30s
+```
+
+## Troubleshooting
+
+### Problemas Comuns
+
+<Accordion title="Instance Not Found" icon="exclamation-triangle">
+**Erro**: `Instance not found: instance-name`
+
+**Causa**: Instância não está cadastrada no Supabase
+
+**Solução**:
+1. Verificar se existe na tabela `instances`
+2. Confirmar `evolution_instance_name` está correto
+3. Verificar se `account_id` está associado corretamente
+</Accordion>
+
+<Accordion title="Database Connection Failed" icon="plug">
+**Erro**: `Connection timeout to Evolution database`
+
+**Causa**: Banco Evolution indisponível ou configuração incorreta
+
+**Solução**:
+1. Verificar `database_url` na tabela `evolution_databases`
+2. Testar conectividade: `psql "connection-string"`
+3. Verificar firewall e whitelist de IPs
+4. Confirmar se banco secundário está configurado
+</Accordion>
+
+<Accordion title="API Key Invalid" icon="key">
+**Erro**: `Unauthorized: Invalid API key`
+
+**Causa**: Chave da Evolution API inválida ou expirada
+
+**Solução**:
+1. Atualizar `api_key` na tabela `evolution_databases`
+2. Verificar se a instância tem permissão para a chave
+3. Regenerar chave no painel Evolution se necessário
+</Accordion>
+
+### Comandos de Diagnóstico
+
+```bash
+# Testar resolução de instância
+curl -X POST /api/admin/federation/resolve \
+  -d '{"instanceParam": "clinica-abc"}'
+
+# Verificar status da federação  
+curl /api/debug/federation-test
+
+# Monitorar conexões ativas
+curl /api/debug/database-monitor
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Configuração" icon="cog">
+    - Sempre configure banco secundário para failover
+    - Use nomes descritivos para instâncias
+    - Mantenha `api_key` segura e rotacionada
+    - Configure monitoring de todas as conexões
+  </Card>
+  
+  <Card title="Performance" icon="tachometer-alt">
+    - Use cache Redis para configurações frequentes
+    - Monitore latência entre serviços
+    - Configure connection pooling adequado
+    - Implemente circuit breaker para APIs externas
+  </Card>
+  
+  <Card title="Segurança" icon="shield-alt">
+    - Isolamento rigoroso por `account_id`
+    - Whitelist IPs para bancos Evolution
+    - Rotação regular de API keys
+    - Audit log de todas as operações críticas
+  </Card>
+  
+  <Card title="Operações" icon="tools">
+    - Deploy gradual de novos bancos
+    - Backup regular de configurações
+    - Procedimentos de disaster recovery
+    - Documentação atualizada de runbooks
+  </Card>
+</CardGroup>
+
+---
+
+<Info>
+O Sistema de Federação é a base que permite ao Eleva AI escalar para milhares de clientes mantendo isolamento, performance e confiabilidade.
+</Info>

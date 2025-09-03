@@ -1,0 +1,1351 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Eleva AI API",
+    "version": "1.0.0",
+    "description": "API para automação WhatsApp Business com IA. Gerencie conversas, contatos, tarefas e processamento de mídia com inteligência artificial avançada.",
+    "contact": {
+      "name": "Suporte Eleva AI",
+      "url": "https://eleva-ai.com",
+      "email": "suporte@eleva-ai.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.eleva-ai.com",
+      "description": "Servidor de Produção"
+    },
+    {
+      "url": "https://staging.eleva-ai.com",
+      "description": "Servidor de Teste"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Desenvolvimento Local"
+    }
+  ],
+  "security": [
+    {
+      "sessionCookie": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID único do contato"
+          },
+          "remote_jid": {
+            "type": "string",
+            "description": "WhatsApp JID do contato (ex: 5511999999999@s.whatsapp.net)"
+          },
+          "push_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nome de exibição do contato no WhatsApp"
+          },
+          "profile_pic_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL da foto de perfil"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["lead", "patient", "lost", "company"],
+            "description": "Classificação do contato"
+          },
+          "stage": {
+            "type": "string",
+            "description": "Estágio atual do lead"
+          },
+          "conversation_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nome processado para conversação"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "task_type": {
+            "type": "string",
+            "enum": ["enviar_mensagem", "alerta_humano"],
+            "description": "Tipo da tarefa"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título da tarefa"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["baixa", "media", "alta", "urgente"],
+            "default": "media"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "sent", "cancelled", "failed"],
+            "description": "Status atual da tarefa"
+          },
+          "original_message": {
+            "type": "string",
+            "nullable": true,
+            "description": "Mensagem a ser enviada"
+          },
+          "suggested_action": {
+            "type": "object",
+            "nullable": true,
+            "description": "Ação sugerida pela IA"
+          },
+          "send_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Data/hora programada para envio"
+          },
+          "is_response_to_lead": {
+            "type": "boolean",
+            "default": false
+          },
+          "execution_data": {
+            "type": "object",
+            "properties": {
+              "media": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MediaFile"
+                }
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MediaFile": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL do arquivo de mídia"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do arquivo"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Tamanho em bytes"
+          },
+          "mime": {
+            "type": "string",
+            "description": "Tipo MIME do arquivo"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["image", "video", "audio", "document"],
+            "description": "Categoria do arquivo"
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "remoteJid": {
+            "type": "string",
+            "description": "WhatsApp JID da conversa"
+          },
+          "unreadMessages": {
+            "type": "integer",
+            "description": "Número de mensagens não lidas"
+          },
+          "lastMessage": {
+            "type": "string",
+            "description": "Prévia da última mensagem"
+          },
+          "lastMessageTimestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp da última mensagem"
+          },
+          "lastMessageType": {
+            "type": "string",
+            "description": "Tipo da última mensagem"
+          },
+          "fromMe": {
+            "type": "boolean",
+            "description": "Se a última mensagem foi enviada por nós"
+          },
+          "profilePicUrl": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
+          "pushName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nome de exibição"
+          },
+          "instanceId": {
+            "type": "string",
+            "description": "ID da instância WhatsApp"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["lead", "patient", "lost", "company"]
+          },
+          "stage": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID único da mensagem"
+          },
+          "remoteJid": {
+            "type": "string",
+            "description": "JID do contato/grupo"
+          },
+          "fromMe": {
+            "type": "boolean",
+            "description": "Se a mensagem foi enviada por nós"
+          },
+          "messageTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "messageType": {
+            "type": "string",
+            "enum": ["conversation", "extendedTextMessage", "imageMessage", "audioMessage", "videoMessage", "documentMessage", "stickerMessage"]
+          },
+          "message": {
+            "type": "object",
+            "description": "Conteúdo da mensagem baseado no tipo"
+          },
+          "pushName": {
+            "type": "string",
+            "nullable": true
+          },
+          "transcription": {
+            "type": "string",
+            "nullable": true,
+            "description": "Transcrição de áudio (quando disponível)"
+          },
+          "visual_analysis": {
+            "type": "string",
+            "nullable": true,
+            "description": "Análise visual de imagem (quando disponível)"
+          },
+          "document_summary": {
+            "type": "string",
+            "nullable": true,
+            "description": "Resumo de documento PDF (quando disponível)"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["user", "admin", "superadmin"]
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_login": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "Instance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "evolution_instance_name": {
+            "type": "string",
+            "description": "Nome da instância no Evolution API"
+          },
+          "evolution_instance_id": {
+            "type": "integer",
+            "description": "ID numérico no Evolution API"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Dados da resposta"
+          },
+          "error": {
+            "type": "string",
+            "description": "Mensagem de erro (quando aplicável)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensagem informativa"
+          },
+          "details": {
+            "description": "Detalhes adicionais sobre o erro"
+          }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {}
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "currentPage": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              },
+              "totalItems": {
+                "type": "integer"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Dados inválidos"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lista de erros de validação específicos"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Fazer login no sistema",
+        "description": "Autentica um usuário com email e senha, retornando token de sessão",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email do usuário"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Senha do usuário"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login realizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {"$ref": "#/components/schemas/User"},
+                            "token": {
+                              "type": "string",
+                              "description": "JWT token para autenticação"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ValidationError"}
+              }
+            }
+          },
+          "401": {
+            "description": "Email ou senha inválidos",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Fazer logout",
+        "description": "Invalida a sessão atual do usuário",
+        "security": [{"sessionCookie": []}],
+        "responses": {
+          "200": {
+            "description": "Logout realizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contacts": {
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "Buscar contatos",
+        "description": "Busca contatos por instância ou JID específico com contexto configurável",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "description": "Nome da instância WhatsApp (obrigatório para busca geral)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "remoteJid",
+            "in": "query",
+            "description": "JID específico para buscar um contato",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "context",
+            "in": "query",
+            "description": "Contexto da busca",
+            "schema": {
+              "type": "string",
+              "enum": ["sidebar", "search"],
+              "default": "sidebar"
+            }
+          },
+          {
+            "name": "pushName",
+            "in": "query",
+            "description": "Nome do contato (usado na criação automática)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "profilePicUrl",
+            "in": "query",
+            "description": "URL da foto do perfil (usado na criação automática)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de contatos encontrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Contact"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado à instância",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/conversations": {
+      "get": {
+        "tags": ["Conversations"],
+        "summary": "Listar conversas",
+        "description": "Lista conversas com mensagens, contadores não lidos e dados enriquecidos",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome ou UUID da instância WhatsApp",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Número da página (padrão: 1)",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limite de resultados por página (padrão: 50)",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Termo de busca para filtrar por nome ou JID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada de conversas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversations": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Conversation"}
+                    },
+                    "cachedMessages": {
+                      "type": "object",
+                      "description": "Cache de mensagens (carregado sob demanda)"
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": {"type": "integer"},
+                        "totalPages": {"type": "integer"},
+                        "totalConversations": {"type": "integer"},
+                        "hasMore": {"type": "boolean"},
+                        "loadingMore": {"type": "boolean"}
+                      }
+                    },
+                    "databaseSource": {
+                      "type": "string",
+                      "description": "Fonte do banco (primary/secondary)"
+                    },
+                    "instanceInfo": {
+                      "type": "object",
+                      "properties": {
+                        "instanceId": {"type": "string"},
+                        "instanceName": {"type": "string"},
+                        "databaseSource": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ValidationError"}
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado à instância",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "404": {
+            "description": "Instância não encontrada",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/messages/{remoteJid}": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Buscar mensagens de uma conversa",
+        "description": "Retorna mensagens de uma conversa específica com processamento de mídia",
+        "parameters": [
+          {
+            "name": "remoteJid",
+            "in": "path",
+            "required": true,
+            "description": "JID do contato/grupo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome da instância",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de mensagens da conversa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Message"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "Buscar tarefas",
+        "description": "Lista tarefas de um contato específico com filtros opcionais",
+        "parameters": [
+          {
+            "name": "remote_jid",
+            "in": "query",
+            "required": true,
+            "description": "JID do contato",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_name",
+            "in": "query",
+            "description": "Nome da instância (opcional se contexto estiver definido)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtrar por status da tarefa",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "approved", "sent", "cancelled", "failed"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de tarefas do contato",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tasks": {
+                          "type": "array",
+                          "items": {"$ref": "#/components/schemas/Task"}
+                        },
+                        "instance_id": {
+                          "type": "string"
+                        },
+                        "contact_id": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ValidationError"}
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      },
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Criar nova tarefa",
+        "description": "Cria uma nova tarefa de mensagem com validação e deduplicação automática",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["remote_jid", "send_at"],
+                "properties": {
+                  "remote_jid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "JID do contato"
+                  },
+                  "instance_name": {
+                    "type": "string",
+                    "description": "Nome da instância (opcional se contexto definido)"
+                  },
+                  "task_type": {
+                    "type": "string",
+                    "enum": ["enviar_mensagem", "alerta_humano"],
+                    "default": "enviar_mensagem"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Título da tarefa (gerado automaticamente se não fornecido)"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["baixa", "media", "alta", "urgente"],
+                    "default": "media"
+                  },
+                  "original_message": {
+                    "type": "string",
+                    "description": "Mensagem a ser enviada"
+                  },
+                  "suggested_action": {
+                    "type": "object",
+                    "description": "Ação sugerida pela IA"
+                  },
+                  "send_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Data/hora programada para envio"
+                  },
+                  "is_response_to_lead": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "execution_data": {
+                    "type": "object",
+                    "properties": {
+                      "media": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/MediaFile"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tarefa criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {"$ref": "#/components/schemas/Task"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ValidationError"}
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/tasks/{taskId}/approve": {
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Aprovar tarefa",
+        "description": "Aprova uma tarefa pendente para execução",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "description": "ID da tarefa",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tarefa aprovada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/transcription": {
+      "post": {
+        "tags": ["AI Processing"],
+        "summary": "Transcrever áudio",
+        "description": "Transcreve mensagem de áudio usando IA",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome da instância",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commit",
+            "in": "query",
+            "description": "Se deve salvar no banco",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["messageId", "remoteJid"],
+                "properties": {
+                  "messageId": {
+                    "type": "string",
+                    "description": "ID da mensagem"
+                  },
+                  "remoteJid": {
+                    "type": "string",
+                    "description": "JID do contato"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcrição realizada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transcription": {
+                      "type": "string",
+                      "description": "Texto transcrito"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/visual-analysis": {
+      "post": {
+        "tags": ["AI Processing"],
+        "summary": "Analisar imagem",
+        "description": "Analisa conteúdo de imagem usando IA",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome da instância",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commit",
+            "in": "query",
+            "description": "Se deve salvar no banco",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["messageId", "remoteJid"],
+                "properties": {
+                  "messageId": {
+                    "type": "string",
+                    "description": "ID da mensagem"
+                  },
+                  "remoteJid": {
+                    "type": "string",
+                    "description": "JID do contato"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Análise visual realizada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "visual_analysis": {
+                      "type": "string",
+                      "description": "Descrição da imagem"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/pdf-summary": {
+      "post": {
+        "tags": ["AI Processing"],
+        "summary": "Resumir documento PDF",
+        "description": "Gera resumo de documento PDF usando IA",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome da instância",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commit",
+            "in": "query",
+            "description": "Se deve salvar no banco",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["messageId", "remoteJid"],
+                "properties": {
+                  "messageId": {
+                    "type": "string",
+                    "description": "ID da mensagem"
+                  },
+                  "remoteJid": {
+                    "type": "string",
+                    "description": "JID do contato"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resumo do PDF gerado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document_summary": {
+                      "type": "string",
+                      "description": "Resumo do documento"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/assistant-config/bootstrap": {
+      "post": {
+        "tags": ["AI Processing"],
+        "summary": "Bootstrap do assistente",
+        "description": "Analisa conversas para construir perfil completo do assistente usando sistema multi-agente",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["instanceId"],
+                "properties": {
+                  "instanceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID da instância"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["full", "incremental"],
+                    "default": "full",
+                    "description": "Modo de análise"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bootstrap iniciado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "started"
+                    },
+                    "taskId": {
+                      "type": "string",
+                      "description": "ID da tarefa de processamento"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/whatsapp/qrcode": {
+      "get": {
+        "tags": ["WhatsApp"],
+        "summary": "Obter QR Code",
+        "description": "Gera QR Code para conectar instância WhatsApp",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome da instância",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR Code gerado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qrcode": {
+                      "type": "string",
+                      "description": "QR Code em base64"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    },
+    "/api/whatsapp/connection": {
+      "get": {
+        "tags": ["WhatsApp"],
+        "summary": "Status da conexão",
+        "description": "Verifica status da conexão WhatsApp",
+        "parameters": [
+          {
+            "name": "instance",
+            "in": "query",
+            "required": true,
+            "description": "Nome da instância",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status obtido com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["open", "connecting", "close"],
+                      "description": "Status da conexão"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Número conectado"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"sessionCookie": []}]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Endpoints de autenticação e gestão de sessão"
+    },
+    {
+      "name": "Contacts",
+      "description": "Gestão de contatos e leads"
+    },
+    {
+      "name": "Conversations", 
+      "description": "Listagem e gestão de conversas"
+    },
+    {
+      "name": "Messages",
+      "description": "Mensagens individuais e histórico"
+    },
+    {
+      "name": "Tasks",
+      "description": "Tarefas automatizadas e manuais"
+    },
+    {
+      "name": "AI Processing",
+      "description": "Processamento de mídia e análise com IA"
+    },
+    {
+      "name": "WhatsApp",
+      "description": "Integração e controle do WhatsApp"
+    }
+  ]
+}

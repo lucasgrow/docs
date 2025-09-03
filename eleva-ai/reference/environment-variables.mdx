@@ -1,0 +1,475 @@
+---
+title: 'Variáveis de Ambiente'
+description: 'Configuração completa de todas as variáveis de ambiente do Eleva AI'
+icon: 'gear'
+---
+
+# Variáveis de Ambiente
+
+O Eleva AI utiliza variáveis de ambiente para configuração de serviços externos, funcionalidades e comportamentos do sistema. Este guia documenta todas as variáveis disponíveis.
+
+<Warning>
+**IMPORTANTE**: Com o Sistema de Federação, as variáveis Evolution (`DATABASE_URL`, `EVOLUTION_API_URL`, etc.) **NÃO devem ser usadas diretamente**. Toda configuração Evolution vem do Supabase.
+</Warning>
+
+## 🔧 Configuração Básica
+
+### Core Application
+
+<ParamField path="NODE_ENV" type="string" default="development">
+  Ambiente de execução da aplicação
+  - `development` - Desenvolvimento local
+  - `production` - Produção
+  - `test` - Testes automatizados
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_APP_URL" type="string" required>
+  URL base da aplicação
+  ```
+  # Desenvolvimento
+  NEXT_PUBLIC_APP_URL=http://localhost:3000
+  
+  # Produção  
+  NEXT_PUBLIC_APP_URL=https://app.eleva-ai.com
+  ```
+</ParamField>
+
+<ParamField path="SESSION_SECRET" type="string" required>
+  Chave secreta para criptografia de sessões (mínimo 32 caracteres)
+  ```
+  SESSION_SECRET=sua-chave-super-secreta-de-32-chars-ou-mais
+  ```
+</ParamField>
+
+### Supabase (Database Principal)
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_URL" type="string" required>
+  URL do projeto Supabase
+  ```
+  NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+  ```
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_ANON_KEY" type="string" required>
+  Chave pública do Supabase para operações client-side
+</ParamField>
+
+<ParamField path="SUPABASE_SERVICE_ROLE_KEY" type="string" required>
+  Chave de serviço do Supabase com privilégios admin (server-side only)
+</ParamField>
+
+<ParamField path="SUPABASE_DATABASE_URL" type="string" optional>
+  Connection string direto do PostgreSQL Supabase (para scripts)
+  ```
+  SUPABASE_DATABASE_URL=postgresql://user:pass@db.supabase.co:5432/postgres
+  ```
+</ParamField>
+
+### Redis (Cache & Sessions)
+
+<ParamField path="REDIS_URL" type="string" required>
+  URL de conexão Redis
+  ```
+  # Local
+  REDIS_URL=redis://localhost:6379
+  
+  # Produção (Railway/Upstash)
+  REDIS_URL=redis://user:pass@host:port
+  ```
+</ParamField>
+
+## 🤖 Inteligência Artificial
+
+### OpenAI
+
+<ParamField path="OPENAI_API_KEY" type="string" required>
+  Chave da API OpenAI para GPT-4 e análise visual
+  ```
+  OPENAI_API_KEY=sk-...
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_MODEL" type="string" default="gpt-4o-mini">
+  Modelo OpenAI padrão para processamento de texto
+  - `gpt-4o-mini` - Mais econômico, boa performance
+  - `gpt-4o` - Maior capacidade, mais caro
+  - `gpt-3.5-turbo` - Legacy, não recomendado
+</ParamField>
+
+### Groq
+
+<ParamField path="GROQ_API_KEY" type="string" required>
+  Chave da API Groq para transcrição de áudio ultrarrápida
+  ```
+  GROQ_API_KEY=gsk_...
+  ```
+</ParamField>
+
+<ParamField path="GROQ_MODEL" type="string" default="whisper-large-v3">
+  Modelo Groq para transcrição
+  - `whisper-large-v3` - Melhor qualidade (recomendado)
+  - `whisper-large-v2` - Boa qualidade, mais rápido
+</ParamField>
+
+## 📱 WhatsApp Evolution (DEPRECIADAS)
+
+<Warning>
+**⚠️ AVISO IMPORTANTE**: As variáveis abaixo são **DEPRECIADAS** e **NÃO devem ser usadas diretamente**. 
+
+Com o Sistema de Federação, toda configuração Evolution vem do Supabase (`evolution_databases` table). Essas variáveis existem apenas para compatibilidade com código legado.
+</Warning>
+
+<ParamField path="DATABASE_URL" type="string" deprecated>
+  ❌ **NÃO USAR** - Use `queryByInstance()` da federação
+</ParamField>
+
+<ParamField path="EVOLUTION_API_URL" type="string" deprecated>
+  ❌ **NÃO USAR** - Use `getInstanceApiConfig()` da federação
+</ParamField>
+
+<ParamField path="EVOLUTION_API_KEY" type="string" deprecated>
+  ❌ **NÃO USAR** - Use `getInstanceApiConfig()` da federação
+</ParamField>
+
+<ParamField path="EVOLUTION_WS_URL" type="string" deprecated>
+  ❌ **NÃO USAR** - Use `getInstanceWebSocketConfig()` da federação
+</ParamField>
+
+## 🧠 Sistema MemOS v2
+
+### Core Memory Features
+
+<ParamField path="SUMMARY_ENABLED" type="boolean" default="true">
+  Ativa sistema de resumos para reduzir uso de tokens
+  ```
+  SUMMARY_ENABLED=true
+  ```
+</ParamField>
+
+<ParamField path="SUMMARY_BUFFER_ENABLED" type="boolean" default="true">
+  Buffer de resumos para otimizar conversas longas
+</ParamField>
+
+<ParamField path="INSTANCE_SUMMARY_ENABLED" type="boolean" default="true">
+  Resumos específicos por instância WhatsApp
+</ParamField>
+
+<ParamField path="SUMMARY_REDIS_CACHE_ENABLED" type="boolean" default="true">
+  Cache Redis para resumos frequentemente acessados
+</ParamField>
+
+### Working Memory
+
+<ParamField path="WORKING_MEMORY_TOOL_ENABLED" type="boolean" default="true">
+  Sistema de memória ativa para conversas em andamento
+</ParamField>
+
+<ParamField path="BUFFER_MEMORY_MAX_SIZE" type="number" default="50">
+  Tamanho máximo do buffer de memória ativa
+</ParamField>
+
+<ParamField path="BUFFER_MEMORY_WINDOW_TYPE" type="string" default="sliding">
+  Tipo de janela de memória
+  - `sliding` - Janela deslizante (recomendado)
+  - `fixed` - Janela fixa
+</ParamField>
+
+<ParamField path="BUFFER_MEMORY_TTL" type="number" default="3600">
+  TTL em segundos para itens do buffer (1 hora)
+</ParamField>
+
+### Advanced Processing
+
+<ParamField path="USE_COT" type="boolean" default="true">
+  Chain-of-Thought reasoning para análises complexas
+</ParamField>
+
+<ParamField path="MEMORY_COT_REASONING" type="boolean" default="true">
+  Raciocínio COT específico para processamento de memórias
+</ParamField>
+
+<ParamField path="MEMORY_QA_DETECTION" type="boolean" default="true">
+  Detecção automática de perguntas e respostas
+</ParamField>
+
+<ParamField path="MEMORY_TOPIC_EVOLUTION" type="boolean" default="true">
+  Rastreamento da evolução de tópicos ao longo do tempo
+</ParamField>
+
+<ParamField path="MEMORY_RELATIONSHIP_ANALYSIS" type="boolean" default="true">
+  Análise de relacionamentos entre entidades
+</ParamField>
+
+### Performance Features
+
+<ParamField path="BATCH_PERSIST_ENABLED" type="boolean" default="true">
+  Persistência em lote para melhor performance
+</ParamField>
+
+<ParamField path="PIPELINE_CHUNKING_ENABLED" type="boolean" default="true">
+  Processamento em chunks para conversas muito longas
+</ParamField>
+
+### Graph Memory (Experimental)
+
+<ParamField path="GRAPH_MEMORY_ENABLED" type="boolean" default="false">
+  Sistema experimental de memória em grafo
+  ```
+  # Apenas para ambiente de testes
+  GRAPH_MEMORY_ENABLED=true
+  ```
+</ParamField>
+
+<ParamField path="TEMPORAL_GRAPH_ENABLED" type="boolean" default="false">
+  Grafos temporais para análise de evolução
+</ParamField>
+
+### Garbage Collection
+
+<ParamField path="MEMORY_GC_ENABLED" type="boolean" default="true">
+  Limpeza automática de memórias de baixa qualidade
+</ParamField>
+
+<ParamField path="MEMORY_GC_TTL_DAYS" type="number" default="0">
+  Dias para expirar memórias (0 = nunca expira por idade)
+</ParamField>
+
+<ParamField path="MEMORY_GC_CONFIDENCE_MAX" type="number" default="0.3">
+  Limite máximo de confiança para garbage collection (0.0-1.0)
+</ParamField>
+
+## 🚀 Sistema Multi-Agente Bootstrap
+
+<ParamField path="BOOTSTRAP_USE_MULTI_AGENT" type="boolean" default="true">
+  Ativa o sistema multi-agente bootstrap
+  ```
+  BOOTSTRAP_USE_MULTI_AGENT=true
+  ```
+</ParamField>
+
+<ParamField path="BOOTSTRAP_CONFIDENCE_THRESHOLD" type="number" default="0.7">
+  Limite mínimo de confiança para aplicar bootstrap automático
+</ParamField>
+
+## 🎯 Feature Flags
+
+### AI/Memos System
+
+<ParamField path="MEMOS_USE_GRANULAR_V3" type="boolean" default="true">
+  Sistema de memória granular v3 com maior precisão
+</ParamField>
+
+<ParamField path="MEMOS_USE_DUAL_TASK_GENERATION" type="boolean" default="true">
+  Geração dupla de tarefas (imediata + futura)
+</ParamField>
+
+<ParamField path="MEMOS_USE_LOSS_DETECTION" type="boolean" default="true">
+  Detecção automática de eventos de perda de leads
+</ParamField>
+
+### Prompt Engineering
+
+<ParamField path="PROMPTS_USE_V2_TASK_GENERATION" type="boolean" default="true">
+  Prompts v2 para geração de tarefas (agent-style)
+</ParamField>
+
+<ParamField path="PROMPTS_USE_V2_MEMORY_ENRICHMENT" type="boolean" default="true">
+  Prompts v2 para enriquecimento de memória
+</ParamField>
+
+<ParamField path="PROMPTS_USE_AGENT_ORCHESTRATOR" type="boolean" default="true">
+  Orquestrador de workflow tipo agente
+</ParamField>
+
+<ParamField path="PROMPTS_USE_CONFIDENCE_CALIBRATION" type="boolean" default="true">
+  Calibração de confiança para operações de IA
+</ParamField>
+
+## 🎬 Processamento de Mídia
+
+### Timeouts
+
+<ParamField path="PDF_DOWNLOAD_TIMEOUT" type="number" default="30000">
+  Timeout em ms para download de PDFs
+</ParamField>
+
+<ParamField path="MEDIA_PROXY_TIMEOUT" type="number" default="30000">
+  Timeout em ms para proxy de mídia
+</ParamField>
+
+### Processamento Automático
+
+<ParamField path="AUTO_PROCESS_MEDIA" type="boolean" default="true">
+  Processamento automático de mídia em conversas
+  ```
+  # Para desabilitar
+  AUTO_PROCESS_MEDIA=false
+  ```
+</ParamField>
+
+## 🔍 UI & Debug
+
+### Annotations
+
+<ParamField path="UI_ANNOTATIONS_ENABLED" type="boolean" default="true">
+  Anotações visuais na interface para operações de memória
+</ParamField>
+
+<ParamField path="REASONING_TOGGLE_ENABLED" type="boolean" default="true">
+  Toggle para exibir/ocultar raciocínio da IA
+</ParamField>
+
+<ParamField path="SIDEBAR_RELEVANT_MEMS_ENABLED" type="boolean" default="true">
+  Sidebar com memórias relevantes no contexto atual
+</ParamField>
+
+<ParamField path="AUDIT_PANEL_ENABLED" type="boolean" default="true">
+  Painel de auditoria para operações críticas
+</ParamField>
+
+### Debug Mode
+
+<ParamField path="NEXT_PUBLIC_DEBUG_MODE" type="boolean" default="false">
+  Ativa logs de debug no console (apenas desenvolvimento)
+  ```
+  NEXT_PUBLIC_DEBUG_MODE=true
+  ```
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_DEBUG_DIAGNOSTIC" type="boolean" default="false">
+  Canal de diagnósticos detalhado para eventos SSE
+</ParamField>
+
+## 📧 Notificações
+
+### Email (Nodemailer)
+
+<ParamField path="SMTP_HOST" type="string" optional>
+  Servidor SMTP para envio de emails
+  ```
+  SMTP_HOST=smtp.gmail.com
+  ```
+</ParamField>
+
+<ParamField path="SMTP_PORT" type="number" default="587">
+  Porta do servidor SMTP
+</ParamField>
+
+<ParamField path="SMTP_USER" type="string" optional>
+  Usuário SMTP
+</ParamField>
+
+<ParamField path="SMTP_PASS" type="string" optional>
+  Senha SMTP
+</ParamField>
+
+### Webhooks
+
+<ParamField path="WEBHOOK_SECRET" type="string" required>
+  Segredo para validação de webhooks Evolution
+  ```
+  WEBHOOK_SECRET=sua-chave-webhook-segura
+  ```
+</ParamField>
+
+## 🏗️ Build e Deploy
+
+### Next.js
+
+<ParamField path="NEXT_TELEMETRY_DISABLED" type="boolean" default="false">
+  Desabilita telemetria do Next.js
+  ```
+  NEXT_TELEMETRY_DISABLED=1
+  ```
+</ParamField>
+
+<ParamField path="TURBOPACK" type="boolean" default="false">
+  Força uso do Turbopack em desenvolvimento
+  ```
+  TURBOPACK=1
+  ```
+</ParamField>
+
+## 📋 Exemplo Completo (.env.local)
+
+```bash
+# ============================================
+# ELEVA AI - CONFIGURAÇÃO COMPLETA
+# ============================================
+
+# --- Core Application ---
+NODE_ENV=development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+SESSION_SECRET=sua-chave-super-secreta-de-32-chars-ou-mais
+
+# --- Supabase (OBRIGATÓRIO) ---
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-publica
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico
+
+# --- Redis (OBRIGATÓRIO) ---
+REDIS_URL=redis://localhost:6379
+
+# --- Inteligência Artificial (OBRIGATÓRIO) ---
+OPENAI_API_KEY=sk-sua-chave-openai
+GROQ_API_KEY=gsk_sua-chave-groq
+
+# --- MemOS v2 (RECOMENDADO) ---
+SUMMARY_ENABLED=true
+WORKING_MEMORY_TOOL_ENABLED=true
+USE_COT=true
+MEMORY_GC_ENABLED=true
+MEMORY_GC_CONFIDENCE_MAX=0.3
+
+# --- Multi-Agent Bootstrap ---
+BOOTSTRAP_USE_MULTI_AGENT=true
+
+# --- Feature Flags ---
+MEMOS_USE_GRANULAR_V3=true
+PROMPTS_USE_V2_TASK_GENERATION=true
+
+# --- Webhooks ---
+WEBHOOK_SECRET=sua-chave-webhook-segura
+
+# --- Debug (apenas desenvolvimento) ---
+NEXT_PUBLIC_DEBUG_MODE=false
+NEXT_TELEMETRY_DISABLED=1
+```
+
+## ⚠️ Variáveis Críticas de Segurança
+
+<Warning>
+**NUNCA committar essas variáveis no Git:**
+- `SESSION_SECRET`
+- `SUPABASE_SERVICE_ROLE_KEY` 
+- `OPENAI_API_KEY`
+- `GROQ_API_KEY`
+- `WEBHOOK_SECRET`
+- Qualquer chave de API ou senha
+</Warning>
+
+### Checklist de Segurança
+
+<Steps>
+  <Step title="Arquivo .env.local no .gitignore">
+    Confirmar que `.env.local` está listado no `.gitignore`
+  </Step>
+  
+  <Step title="Rotação Regular de Chaves">
+    Rotacionar chaves de API periodicamente (trimestral)
+  </Step>
+  
+  <Step title="Princípio do Menor Privilégio">
+    Usar chaves com mínimas permissões necessárias
+  </Step>
+  
+  <Step title="Monitoramento de Uso">
+    Configurar alertas para uso anômalo de APIs
+  </Step>
+</Steps>
+
+---
+
+<Info>
+**Dica**: Use o comando `npm run validate:setup` para verificar se todas as variáveis obrigatórias estão configuradas corretamente.
+</Info>

@@ -1,0 +1,581 @@
+---
+title: 'Troubleshooting'
+description: 'Soluções para problemas comuns do Eleva AI baseadas em cenários reais de produção'
+icon: 'wrench'
+---
+
+# Troubleshooting - Eleva AI
+
+Guia completo para solucionar problemas comuns, baseado em experiências reais de produção e desenvolvimento.
+
+## 🔍 Diagnóstico Rápido
+
+### Health Check Geral
+
+Antes de investigar problemas específicos, execute um diagnóstico geral:
+
+```bash
+# Verificar status da aplicação
+curl http://localhost:3000/api/health
+
+# Resposta esperada:
+{
+  "status": "healthy",
+  "checks": {
+    "database": "ok",
+    "redis": "ok", 
+    "evolution": "ok"
+  }
+}
+```
+
+### Debug Mode
+
+Para ativar logs detalhados durante investigação:
+
+```bash
+# No .env.local
+NEXT_PUBLIC_DEBUG_MODE=true
+NEXT_PUBLIC_DEBUG_DIAGNOSTIC=true
+```
+
+## 🗄️ Problemas de Banco de Dados
+
+### Evolution Database Connection Timeouts
+
+<Accordion title="Problema: Connection terminated due to connection timeout" icon="clock" defaultOpen>
+
+**Sintomas**:
+- Timeouts ao buscar mensagens/contatos
+- Erro: `Connection terminated due to connection timeout`
+- Logs de falha de conexão com Evolution databases
+
+**Causa Comum**: 
+IP dinâmico não está na whitelist do firewall Hetzner (comum em desenvolvimento via mobile/4G)
+
+**Soluções**:
+
+<Tabs>
+  <Tab title="Verificar IP Atual">
+    ```bash
+    # Verificar seu IP público atual
+    curl -s https://api.ipify.org
+    
+    # Testar conexão direta ao Evolution
+    psql "postgresql://user:pass@host:port/db" -c "SELECT 1"
+    ```
+    
+    Se der timeout, seu IP não está na whitelist.
+  </Tab>
+  
+  <Tab title="Whitelist IP Range">
+    No painel Hetzner/Cloud:
+    1. Adicionar range de IP usando CIDR: `181.77.19.0/24`
+    2. Permitir 256 IPs de uma vez para IPs dinâmicos
+    3. Aplicar regra no firewall do servidor Evolution
+  </Tab>
+  
+  <Tab title="SSH Tunnel (Temporário)">
+    ```bash
+    # Criar túnel SSH através do servidor de produção
+    ssh -L 5433:evolution-host:5433 user@production-server
+    
+    # Usar localhost:5433 na connection string
+    DATABASE_URL=postgresql://user:pass@localhost:5433/evolution
+    ```
+  </Tab>
+</Tabs>
+
+</Accordion>
+
+### Supabase Connection Issues
+
+<Accordion title="Problema: Invalid Supabase URL or Key" icon="database">
+
+**Sintomas**:
+- `Invalid API key` ou `Project not found`
+- Falhas na autenticação
+- Tabelas não encontradas
+
+**Diagnóstico**:
+```bash
+# Testar connection strings
+curl -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/users?select=email&limit=1"
+```
+
+**Soluções**:
+1. **Verificar credenciais**: Confirmar no [dashboard Supabase](https://supabase.com/dashboard)
+2. **Service Role Key**: Usar `service_role` key, não `anon` key para operações server-side
+3. **RLS Policies**: Verificar Row Level Security nas tabelas
+4. **Database URL**: Para scripts diretos, usar `SUPABASE_DATABASE_URL`
+
+</Accordion>
+
+### Query Federation Errors
+
+<Accordion title="Problema: Instance not found" icon="search">
+
+**Sintomas**:
+- `Instance not found: instance-name`
+- Falhas ao resolver instâncias
+- Queries direcionadas para banco incorreto
+
+**Diagnóstico**:
+```bash
+# Testar resolução de instância
+curl -X POST http://localhost:3000/api/admin/federation/resolve \
+  -H "Content-Type: application/json" \
+  -d '{"instanceParam": "minha-instancia"}'
+```
+
+**Soluções**:
+
+<Steps>
+  <Step title="Verificar Cadastro da Instância">
+    ```sql
+    -- No Supabase
+    SELECT i.*, ed.name as db_name 
+    FROM instances i 
+    JOIN evolution_databases ed ON i.evolution_database_id = ed.id 
+    WHERE i.evolution_instance_name = 'nome-da-instancia';
+    ```
+  </Step>
+  
+  <Step title="Verificar Association Account">
+    ```sql
+    -- Confirmar se instância pertence ao account correto
+    SELECT * FROM instances 
+    WHERE evolution_instance_name = 'nome' 
+    AND account_id = 'user-account-id';
+    ```
+  </Step>
+  
+  <Step title="Testar Conexão Evolution DB">
+    ```bash
+    # Usando federation debug
+    curl http://localhost:3000/api/debug/federation-test
+    ```
+  </Step>
+</Steps>
+
+</Accordion>
+
+## 🤖 Problemas de IA e Processamento
+
+### Media Download Timeouts
+
+<Accordion title="Problema: ConnectTimeoutError downloading PDFs/images" icon="download" defaultOpen>
+
+**Sintomas**:
+- Timeouts ao baixar PDFs do object storage
+- `ConnectTimeoutError` com `nbg1.your-objectstorage.com`
+- Processamento de mídia falha
+
+**Causa**: 
+Object storage (Hetzner/S3) com latência alta ou problemas de conectividade
+
+**Soluções Implementadas**:
+
+<Tabs>
+  <Tab title="Retry Logic">
+    O sistema já implementa retry com backoff exponencial:
+    ```typescript
+    // lib/ai/retry-with-backoff.ts
+    const result = await retryWithBackoff(
+      () => downloadFile(url),
+      { maxRetries: 3, baseDelay: 1000 }
+    )
+    ```
+  </Tab>
+  
+  <Tab title="Timeout Configuration">
+    ```bash
+    # Ajustar timeouts no .env.local
+    PDF_DOWNLOAD_TIMEOUT=60000  # 60 segundos
+    MEDIA_PROXY_TIMEOUT=45000   # 45 segundos
+    ```
+  </Tab>
+  
+  <Tab title="MediaUrl Preference">
+    O sistema prefere `mediaUrl` (S3) sobre `documentMessage.url` (WhatsApp):
+    ```typescript
+    // ✅ CORRETO: Fallback inteligente
+    const mediaUrl = message?.mediaUrl || message?.documentMessage?.url;
+    ```
+  </Tab>
+</Tabs>
+
+</Accordion>
+
+### PDF Document Summary Nested Structure
+
+<Accordion title="Problema: Objects are not valid as a React child (nested summaries)" icon="file-pdf">
+
+**Sintomas**:
+- `document_summary` mostra "❌ Pendente" na UI
+- Erro React: "Objects are not valid as a React child"
+- Estrutura JSON aninhada 8+ níveis
+
+**Causa**: 
+Uso incorreto do operador `||` no PostgreSQL que cria estruturas aninhadas em vez de substituir
+
+**Solução**:
+```sql
+-- ❌ ERRADO: Cria nesting
+UPDATE table SET message = message || jsonb_build_object('document_summary', $1)
+
+-- ✅ CORRETO: Substitui campo
+UPDATE table SET message = jsonb_set(message, '{document_summary}', $1::jsonb, true)
+```
+
+**Script de Correção**:
+```bash
+# Executar script de limpeza
+npx tsx scripts/fix-nested-document-summary.ts
+```
+
+</Accordion>
+
+### Zod Validation Errors in Tool Calling
+
+<Accordion title="Problema: ZodError in AI tool calling" icon="exclamation-triangle">
+
+**Sintomas**:
+- `[memos-tool-calling] Erro ao atualizar sumário Error [ZodError]`
+- Field validation fails com `is_response_to` null
+- IA tools retornam data incompatível com schema
+
+**Causa**:
+Schemas entre tool definitions e validation não coincidem
+
+**Solução**:
+```typescript
+// ✅ Schema deve aceitar null
+const schema = z.object({
+  is_response_to: z.string().nullable().optional(),
+  // outros campos...
+})
+
+// ✅ Tool definition deve permitir null
+{
+  type: "object",
+  properties: {
+    is_response_to: { type: ["string", "null"] }
+  }
+}
+```
+
+</Accordion>
+
+## 📱 Problemas WhatsApp/Evolution
+
+### QR Code Not Loading
+
+<Accordion title="Problema: QR Code não aparece na interface" icon="qrcode" defaultOpen>
+
+**Sintomas**:
+- Tela branca na seção WhatsApp
+- QR Code não carrega
+- Erro no console de JavaScript
+
+**Diagnósticos**:
+
+<Tabs>
+  <Tab title="Testar Endpoint Diretamente">
+    ```bash
+    # Verificar se endpoint funciona
+    curl http://localhost:3000/api/whatsapp/qrcode?instance=minha-instancia
+    ```
+  </Tab>
+  
+  <Tab title="Verificar Federation">
+    ```bash
+    # Status da federação
+    curl http://localhost:3000/api/debug/federation-test
+    
+    # Deve mostrar conexões Evolution ativas
+    ```
+  </Tab>
+  
+  <Tab title="Debug Browser">
+    ```javascript
+    // No console do browser
+    localStorage.setItem('debug', 'true')
+    // Recarregar página e verificar logs
+    ```
+  </Tab>
+</Tabs>
+
+**Soluções**:
+
+<Steps>
+  <Step title="Verificar Evolution Database Config">
+    ```sql
+    -- Conferir configuração no Supabase
+    SELECT * FROM evolution_databases WHERE is_active = true;
+    ```
+  </Step>
+  
+  <Step title="Testar Evolution API Diretamente">
+    ```bash
+    # Testar API Evolution
+    curl -H "apikey: SUA-API-KEY" \
+      https://your-evolution-api.com/instance/qrcode/INSTANCE-NAME
+    ```
+  </Step>
+  
+  <Step title="Verificar Instance Association">
+    ```sql
+    SELECT i.evolution_instance_name, ed.api_url, ed.api_key 
+    FROM instances i 
+    JOIN evolution_databases ed ON i.evolution_database_id = ed.id 
+    WHERE i.evolution_instance_name = 'sua-instancia';
+    ```
+  </Step>
+</Steps>
+
+</Accordion>
+
+### WhatsApp Connection Status Issues
+
+<Accordion title="Problema: Instance shows disconnected but WhatsApp is working" icon="whatsapp">
+
+**Sintomas**:
+- Status mostra "Disconnected" na UI
+- Mensagens continuam funcionando normalmente
+- WebSocket connection errors
+
+**Causa**: 
+WebSocket URL incorreta ou problema de autenticação
+
+**Diagnóstico**:
+```bash
+# Verificar status via API
+curl http://localhost:3000/api/whatsapp/connection?instance=minha-instancia
+
+# Verificar WebSocket config
+curl http://localhost:3000/api/debug/instance-check
+```
+
+**Soluções**:
+1. **Atualizar WS URL**: Verificar `ws_url` na tabela `evolution_databases`
+2. **Regenerar QR**: Usar endpoint `/api/whatsapp/regenerate-qr`
+3. **Verificar Firewall**: WebSocket precisa de portas específicas
+4. **Evolution API Status**: Verificar se Evolution API está healthy
+
+</Accordion>
+
+## 🎯 Problemas de Performance
+
+### Frontend State Management Issues
+
+<Accordion title="Problema: setCachedMessages is not defined" icon="react">
+
+**Sintomas**:
+- Erro JavaScript ao processar PDFs na UI
+- Component prop missing errors
+- State updates failing
+
+**Causa**: 
+Props não estão sendo passadas corretamente na árvore de componentes
+
+**Solução**:
+```typescript
+// ✅ CORRETO: Passar props completas
+interface ChatWindowProps {
+  setCachedMessages: (messages: any) => void;
+  // outras props...
+}
+
+function ChatWindow({ setCachedMessages, ...props }: ChatWindowProps) {
+  return (
+    <MessageContent 
+      setCachedMessages={setCachedMessages}
+      {...props}
+    />
+  );
+}
+```
+
+</Accordion>
+
+### Redis Cache Issues
+
+<Accordion title="Problema: Cache hit rate baixo ou errors" icon="database">
+
+**Sintomas**:
+- Performance lenta em queries repetitivas
+- Redis connection errors
+- Cache misses altos
+
+**Diagnóstico**:
+```bash
+# Verificar status Redis
+redis-cli info stats
+
+# Ver hit rate
+redis-cli info stats | grep hit
+
+# Verificar keys ativas
+redis-cli keys "*" | head -20
+```
+
+**Soluções**:
+1. **Memory Pressure**: Verificar `maxmemory` e política de eviction
+2. **Connection Pool**: Ajustar pool size no código
+3. **Key Expiration**: Verificar TTL adequado para diferentes tipos de data
+4. **Network Latency**: Para Redis remoto, considerar Redis local para dev
+
+</Accordion>
+
+## 🚨 Problemas de Deploy e Produção
+
+### Docker Container Issues
+
+<Accordion title="Problema: Container não aplica mudanças de código" icon="docker">
+
+**Sintomas**:
+- Código alterado não aparece após deploy
+- Build cache impedindo updates
+- Container usando versão antiga
+
+**Solução**:
+```bash
+# Rebuild sem cache
+docker build --no-cache -t eleva-nextjs:latest .
+
+# Force service update
+docker service update --force --image eleva-nextjs:latest eleva_nextjs
+
+# Verificar se aplicou
+docker service ps eleva_nextjs
+```
+
+</Accordion>
+
+### Environment Variables in Production
+
+<Accordion title="Problema: Env vars não carregam em produção" icon="gear">
+
+**Sintomas**:
+- Features não funcionam em produção
+- API keys undefined
+- Connection strings faltando
+
+**Verificação**:
+```bash
+# Dentro do container
+docker exec -it container-id printenv | grep -E "(SUPABASE|REDIS|OPENAI)"
+
+# Verificar se .env está sendo lido
+docker exec -it container-id cat /app/.env 2>/dev/null || echo "No .env file"
+```
+
+**Soluções**:
+1. **Docker Secrets**: Usar secrets para dados sensíveis
+2. **Build Args**: Para variáveis de build-time
+3. **Runtime Env**: Para variáveis que mudam entre ambientes
+4. **Health Check**: Validar env vars no startup
+
+</Accordion>
+
+## 🔧 Ferramentas de Debug
+
+### Endpoints de Diagnóstico
+
+O sistema inclui endpoints especializados para debug:
+
+<CardGroup cols={2}>
+  <Card title="Federation Status" icon="network-wired">
+    ```bash
+    GET /api/debug/federation-test
+    # Status de todos os bancos Evolution
+    ```
+  </Card>
+  
+  <Card title="Database Monitor" icon="monitor">
+    ```bash  
+    GET /api/debug/database-monitor
+    # Métricas de performance das conexões
+    ```
+  </Card>
+  
+  <Card title="Instance Resolution" icon="search">
+    ```bash
+    POST /api/admin/federation/resolve
+    # Testar resolução de instâncias
+    ```
+  </Card>
+  
+  <Card title="Memory Status" icon="memory">
+    ```bash
+    GET /api/debug/detailed-memos-debug
+    # Status do sistema de memória IA
+    ```
+  </Card>
+</CardGroup>
+
+### Scripts de Diagnóstico
+
+```bash
+# Validação completa do setup
+npm run validate:setup
+
+# Testar conectividade Evolution
+npm run test:evolution-connection
+
+# Verificar integridade do sistema MemOS
+npm run test:memos-v2
+
+# Executar todos os health checks
+npm run health:full
+```
+
+### Logs Estruturados
+
+Para investigar problemas específicos, use filtros de log:
+
+```bash
+# Logs de federação apenas
+docker service logs eleva_nextjs 2>&1 | grep -E '\[FEDERATION\]'
+
+# Logs de processamento de mídia
+docker service logs eleva_nextjs 2>&1 | grep -E '\[MEDIA API\]|\[SEND MEDIA\]'
+
+# Logs de erro crítico
+docker service logs eleva_nextjs 2>&1 | grep -E 'ERROR|CRITICAL|FATAL'
+
+# Logs de IA/MemOS
+docker service logs eleva_nextjs 2>&1 | grep -E '\[MEMOS\]|\[AI\]'
+```
+
+## 📞 Suporte Avançado
+
+Se os troubleshooting acima não resolverem:
+
+<Steps>
+  <Step title="Coletar Informações">
+    ```bash
+    # Gerar relatório completo
+    npm run debug:report
+    
+    # Inclui: logs, env vars (sanitized), health checks, versions
+    ```
+  </Step>
+  
+  <Step title="Verificar Known Issues">
+    Consulte [GitHub Issues](https://github.com/lucasgrow/eleva-ai-minimal/issues) para problemas conhecidos
+  </Step>
+  
+  <Step title="Contatar Suporte">
+    WhatsApp: +55 11 99999-9999 (inclua o debug report)
+  </Step>
+</Steps>
+
+---
+
+<Warning>
+**Importante**: Nunca compartilhe chaves de API, tokens ou credenciais em reports de debug. Use sempre versões sanitizadas.
+</Warning>

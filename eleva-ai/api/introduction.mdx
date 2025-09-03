@@ -1,0 +1,503 @@
+---
+title: 'Introdução à API'
+description: 'Guia completo para integrar com a API REST do Eleva AI'
+icon: 'code'
+---
+
+# API do Eleva AI
+
+A API REST do Eleva AI fornece acesso programático a todas as funcionalidades da plataforma: gestão de conversas WhatsApp, processamento de IA, automação de tarefas e muito mais.
+
+## 🌐 Informações Básicas
+
+### URLs Base
+
+<CardGroup cols={2}>
+  <Card title="Produção" icon="cloud">
+    ```
+    https://api.eleva-ai.com
+    ```
+  </Card>
+  <Card title="Desenvolvimento" icon="laptop-code">
+    ```
+    http://localhost:3000
+    ```
+  </Card>
+</CardGroup>
+
+### Formato de Dados
+
+- **Request/Response**: JSON
+- **Encoding**: UTF-8
+- **Date Format**: ISO 8601 (YYYY-MM-DDTHH:mm:ssZ)
+- **Timezone**: UTC
+
+### Rate Limiting
+
+<ParamField path="Rate Limits" type="information">
+  - **Authenticated**: 1000 requests/hour por usuário
+  - **Anonymous**: 100 requests/hour por IP
+  - **Headers**: `X-RateLimit-*` informam status atual
+</ParamField>
+
+## 🔐 Autenticação
+
+A API usa **autenticação baseada em sessão** com cookies seguros:
+
+<Steps>
+  <Step title="Login">
+    ```bash
+    curl -X POST https://api.eleva-ai.com/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{"email":"user@example.com","password":"password"}' \
+      -c cookies.txt
+    ```
+  </Step>
+  
+  <Step title="Usar Sessão">
+    ```bash
+    curl -X GET https://api.eleva-ai.com/api/conversations \
+      -b cookies.txt
+    ```
+  </Step>
+</Steps>
+
+<Note>
+Para detalhes completos, veja [Autenticação](/eleva-ai/api/authentication)
+</Note>
+
+## 📊 Estrutura da Resposta
+
+Todas as respostas seguem um padrão consistente:
+
+<Tabs>
+  <Tab title="Sucesso">
+    ```json
+    {
+      "data": {
+        // Dados solicitados aqui
+      },
+      "message": "Operação realizada com sucesso" // Opcional
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Erro">
+    ```json
+    {
+      "error": "Mensagem de erro legível",
+      "details": ["Lista", "de", "detalhes"] // Opcional
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Paginação">
+    ```json
+    {
+      "data": [...],
+      "pagination": {
+        "currentPage": 1,
+        "totalPages": 10,
+        "totalItems": 250,
+        "hasMore": true
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## 🚀 Quick Start
+
+### 1. Configurar Autenticação
+
+```javascript
+// JavaScript/Node.js
+const session = await fetch('https://api.eleva-ai.com/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'seu-email@empresa.com',
+    password: 'sua-senha'
+  }),
+  credentials: 'include' // Importante para cookies
+})
+
+if (!session.ok) {
+  throw new Error('Login failed')
+}
+```
+
+### 2. Fazer Primeira Requisição
+
+```javascript
+// Listar conversas
+const conversations = await fetch('https://api.eleva-ai.com/api/conversations?instance=minha-instancia', {
+  credentials: 'include' // Usa cookie de sessão
+})
+
+const data = await conversations.json()
+console.log(`${data.conversations.length} conversas encontradas`)
+```
+
+### 3. Processar Mídia com IA
+
+```javascript
+// Transcrever áudio
+const transcription = await fetch('https://api.eleva-ai.com/api/transcription?instance=minha-instancia&commit=true', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    messageId: 'msg-id',
+    remoteJid: '5511999999999@s.whatsapp.net'
+  }),
+  credentials: 'include'
+})
+
+const result = await transcription.json()
+console.log('Transcrição:', result.transcription)
+```
+
+## 📋 Principais Endpoints
+
+### Conversas e Mensagens
+
+<CardGroup cols={2}>
+  <Card title="Listar Conversas" icon="comments">
+    `GET /api/conversations`
+    
+    Lista conversas com mensagens, contadores não lidos e enriquecimento automático
+  </Card>
+  
+  <Card title="Mensagens por Conversa" icon="message">
+    `GET /api/messages/{remoteJid}`
+    
+    Histórico completo de mensagens com processamento de mídia
+  </Card>
+</CardGroup>
+
+### Gestão de Contatos
+
+<CardGroup cols={2}>
+  <Card title="Buscar Contatos" icon="address-book">
+    `GET /api/contacts`
+    
+    Suporte a múltiplos contextos (sidebar/search) com criação automática
+  </Card>
+  
+  <Card title="Detalhes do Contato" icon="user">
+    `GET /api/contacts/{contactId}`
+    
+    Informações detalhadas, perfil de IA e histórico
+  </Card>
+</CardGroup>
+
+### Automação e Tarefas
+
+<CardGroup cols={2}>
+  <Card title="Listar Tarefas" icon="list-check">
+    `GET /api/tasks`
+    
+    Tarefas automáticas e manuais com filtros por status
+  </Card>
+  
+  <Card title="Criar Tarefa" icon="plus">
+    `POST /api/tasks`
+    
+    Criação de tarefas com validação Zod e deduplicação
+  </Card>
+</CardGroup>
+
+### Processamento de IA
+
+<CardGroup cols={2}>
+  <Card title="Transcrever Áudio" icon="microphone">
+    `POST /api/transcription`
+    
+    Groq Whisper para transcrição ultrarrápida
+  </Card>
+  
+  <Card title="Analisar Imagem" icon="image">
+    `POST /api/visual-analysis`
+    
+    OpenAI Vision para descrição de imagens
+  </Card>
+</CardGroup>
+
+## 🔄 Integrações em Tempo Real
+
+### Server-Sent Events (SSE)
+
+Para atualizações em tempo real:
+
+```javascript
+const eventSource = new EventSource('/api/sse')
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data)
+  
+  switch (data.type) {
+    case 'message.received':
+      console.log('Nova mensagem:', data.payload)
+      break
+    case 'task.completed':
+      console.log('Tarefa concluída:', data.payload)
+      break
+  }
+}
+```
+
+### WebHooks Evolution
+
+Para receber eventos do WhatsApp:
+
+```javascript
+// Configurar webhook no Evolution API
+const webhook = {
+  url: 'https://sua-app.com/api/webhook/notify',
+  events: ['messages.upsert', 'connection.update'],
+  webhook_by_events: true
+}
+```
+
+## 🎯 Casos de Uso Comuns
+
+### 1. Monitorar Novas Mensagens
+
+<Tabs>
+  <Tab title="Polling (Simples)">
+    ```javascript
+    async function checkNewMessages() {
+      const response = await fetch('/api/conversations?instance=minhaInstancia&page=1&limit=10')
+      const { conversations } = await response.json()
+      
+      // Processar novas mensagens
+      conversations.forEach(conv => {
+        if (conv.unreadMessages > 0) {
+          console.log(`${conv.unreadMessages} mensagens não lidas de ${conv.pushName}`)
+        }
+      })
+    }
+    
+    // Verificar a cada 30 segundos
+    setInterval(checkNewMessages, 30000)
+    ```
+  </Tab>
+  
+  <Tab title="SSE (Recomendado)">
+    ```javascript
+    const events = new EventSource('/api/sse')
+    
+    events.addEventListener('message.received', (event) => {
+      const message = JSON.parse(event.data)
+      
+      // Notificar usuário
+      showNotification(`Nova mensagem de ${message.pushName}: ${message.preview}`)
+      
+      // Atualizar UI em tempo real
+      updateConversationList(message.remoteJid)
+    })
+    ```
+  </Tab>
+</Tabs>
+
+### 2. Automação de Tarefas
+
+```javascript
+async function createFollowUpTask(contactJid, delayHours = 24) {
+  const sendAt = new Date()
+  sendAt.setHours(sendAt.getHours() + delayHours)
+  
+  const task = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      remote_jid: contactJid,
+      original_message: 'Olá! Como posso ajudá-lo hoje?',
+      send_at: sendAt.toISOString(),
+      priority: 'media'
+    }),
+    credentials: 'include'
+  })
+  
+  if (task.ok) {
+    console.log('Follow-up agendado para:', sendAt)
+  }
+}
+```
+
+### 3. Processamento Batch de Mídias
+
+```javascript
+async function processPendingMedia(instanceName) {
+  // Buscar conversas com mídia não processada
+  const response = await fetch(`/api/conversations?instance=${instanceName}&limit=50`)
+  const { conversations } = await response.json()
+  
+  for (const conv of conversations) {
+    // Processar mensagens de áudio
+    await processAudioMessages(conv.remoteJid, instanceName)
+    
+    // Processar imagens
+    await processImageMessages(conv.remoteJid, instanceName)
+    
+    // Aguardar para evitar rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+}
+
+async function processAudioMessages(remoteJid, instance) {
+  // Buscar mensagens de áudio não processadas
+  const messages = await getAudioMessages(remoteJid, instance)
+  
+  for (const msg of messages) {
+    try {
+      const result = await fetch(`/api/transcription?instance=${instance}&commit=true`, {
+        method: 'POST',
+        body: JSON.stringify({
+          messageId: msg.id,
+          remoteJid: remoteJid
+        }),
+        credentials: 'include'
+      })
+      
+      if (result.ok) {
+        console.log(`Áudio ${msg.id} transcrito com sucesso`)
+      }
+    } catch (error) {
+      console.error(`Erro ao transcrever ${msg.id}:`, error)
+    }
+  }
+}
+```
+
+## ⚡ Performance e Boas Práticas
+
+### 1. Caching Inteligente
+
+```javascript
+// Cache local para dados que mudam pouco
+const contactCache = new Map()
+
+async function getCachedContact(contactId) {
+  if (contactCache.has(contactId)) {
+    return contactCache.get(contactId)
+  }
+  
+  const response = await fetch(`/api/contacts/${contactId}`)
+  const contact = await response.json()
+  
+  // Cache por 10 minutos
+  contactCache.set(contactId, contact)
+  setTimeout(() => contactCache.delete(contactId), 10 * 60 * 1000)
+  
+  return contact
+}
+```
+
+### 2. Paginação Eficiente
+
+```javascript
+async function loadAllConversations(instance) {
+  let page = 1
+  let allConversations = []
+  
+  while (true) {
+    const response = await fetch(
+      `/api/conversations?instance=${instance}&page=${page}&limit=50`
+    )
+    const { conversations, pagination } = await response.json()
+    
+    allConversations.push(...conversations)
+    
+    if (!pagination.hasMore) break
+    page++
+  }
+  
+  return allConversations
+}
+```
+
+### 3. Error Handling Robusto
+
+```javascript
+async function apiCall(url, options = {}) {
+  const maxRetries = 3
+  let attempt = 0
+  
+  while (attempt < maxRetries) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Redirecionar para login
+          window.location.href = '/login'
+          return
+        }
+        
+        if (response.status >= 500 && attempt < maxRetries - 1) {
+          // Retry para erros de servidor
+          await new Promise(resolve => 
+            setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          )
+          attempt++
+          continue
+        }
+        
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'API Error')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error
+      attempt++
+    }
+  }
+}
+```
+
+## 📚 Recursos Adicionais
+
+<CardGroup cols={2}>
+  <Card title="OpenAPI Spec" icon="file-code" href="/eleva-ai/api/openapi.json">
+    Especificação completa da API em formato OpenAPI 3.0
+  </Card>
+  
+  <Card title="Postman Collection" icon="paper-plane">
+    Collection completa para testes rápidos (em breve)
+  </Card>
+  
+  <Card title="SDK JavaScript" icon="js" >
+    Cliente oficial JavaScript/TypeScript (roadmap)
+  </Card>
+  
+  <Card title="Webhooks Guide" icon="webhook" href="/eleva-ai/api/webhooks/overview">
+    Como configurar e processar webhooks do WhatsApp
+  </Card>
+</CardGroup>
+
+## 🆘 Suporte
+
+<Steps>
+  <Step title="Documentação">
+    Consulte os guides específicos para cada endpoint
+  </Step>
+  
+  <Step title="Troubleshooting">
+    Veja [soluções para problemas comuns](/eleva-ai/guides/troubleshooting)
+  </Step>
+  
+  <Step title="Suporte Direto">
+    WhatsApp: +55 11 99999-9999 | Email: api@eleva-ai.com
+  </Step>
+</Steps>
+
+---
+
+<Info>
+A API está em constante evolução. Acompanhe nosso [changelog](#) para novidades e breaking changes.
+</Info>
