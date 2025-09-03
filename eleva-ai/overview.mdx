@@ -86,56 +86,56 @@ Eleva AI é uma plataforma empresarial que automatiza e otimiza o atendimento vi
 
 ## 💡 Principais Recursos
 
-### 🤖 Processamento Inteligente com IA
+### 🤖 Sistema MemOS v2 (Memory Operating System)
 
 <Tabs>
-  <Tab title="Análise de Conversas">
-    - **GPT-4 Integration**: Compreensão avançada de contexto
-    - **Extração de Entidades**: Nome, telefone, preferências
-    - **Análise de Sentimento**: Detecta urgência e satisfação
-    - **Resumos Automáticos**: Síntese de conversas longas
+  <Tab title="Memória Granular">
+    - **Extração Precisa**: Informações específicas com pontuação de confiança
+    - **Garbage Collection**: Limpeza automática de memórias de baixa qualidade
+    - **Working Memory**: Buffer ativo para conversas em andamento
+    - **Embeddings**: Busca semântica inteligente com vetorização
   </Tab>
   
-  <Tab title="Multi-Agent System">
-    - **9 Agentes Especializados**: Análise completa do negócio
-    - **Identificação de Padrões**: Comportamento e preferências
-    - **Estratégias de Conversão**: Técnicas personalizadas
-    - **Bootstrap Automático**: Configuração inteligente
+  <Tab title="Sistema Multi-Agente Bootstrap">
+    - **9 Agentes Especializados**: BusinessType, Identity, ServiceAnalysis, etc.
+    - **Consensus Building**: Fusão inteligente de insights de múltiplos agentes
+    - **Quality Metrics**: Completude, consistência e confiabilidade
+    - **Auto-Integration**: Integração automática com pipeline MemOS
   </Tab>
   
-  <Tab title="Processamento de Mídia">
-    - **OCR Avançado**: Extração de texto de imagens
-    - **Análise de PDFs**: Resumo e extração de dados
-    - **Transcrição de Áudio**: Converte voz em texto
-    - **Análise Visual**: Compreende conteúdo de imagens
+  <Tab title="Processamento de Mídia IA">
+    - **Transcrição com Groq**: Conversão de áudio para texto com alta precisão
+    - **Análise Visual OpenAI**: Compreensão de imagens e documentos visuais
+    - **PDF Intelligence**: Resumo e extração de dados de documentos
+    - **Retry Logic**: Sistema robusto com backoff exponencial
   </Tab>
 </Tabs>
 
 ### 📊 Gestão e Automação
 
 <CardGroup cols={3}>
-  <Card title="Multi-instâncias" icon="layer-group">
-    Gerencie múltiplas contas WhatsApp em uma única interface
+  <Card title="Federation System" icon="layer-group">
+    Sistema de federação para múltiplos bancos Evolution com load balancing automático
   </Card>
   
-  <Card title="Tarefas Automáticas" icon="robot">
-    Criação e execução de follow-ups baseados em regras
+  <Card title="Task Generation v2" icon="robot">
+    Geração automática de tarefas com análise temporal e confidence scoring
   </Card>
   
-  <Card title="Workers 24/7" icon="clock">
-    Processamento contínuo em background
+  <Card title="Background Workers" icon="clock">
+    Workers especializados: audio-transcription, visual-analysis, task-processing
   </Card>
   
-  <Card title="Classificação de Leads" icon="users">
-    Categorização automática: lead, cliente, perdido
+  <Card title="Lead Classification" icon="users">
+    Classificação automática: lead, patient, lost, company com estágios personalizáveis
   </Card>
   
-  <Card title="Métricas em Tempo Real" icon="chart-line">
-    Dashboard com KPIs e análises
+  <Card title="Real-time Updates" icon="chart-line">
+    SSE (Server-Sent Events) para atualizações em tempo real
   </Card>
   
-  <Card title="Cache Inteligente" icon="database">
-    Redis para alta performance
+  <Card title="Redis Cache Coordinator" icon="database">
+    Sistema avançado de cache com TTL inteligente e invalidação automática
   </Card>
 </CardGroup>
 
@@ -143,34 +143,64 @@ Eleva AI é uma plataforma empresarial que automatiza e otimiza o atendimento vi
 
 ```mermaid
 graph TB
-    subgraph "Frontend"
-        A[Next.js 15 App]
-        B[React 19 + TypeScript]
+    subgraph "Frontend Layer"
+        UI[Next.js 15 + React 19]
+        WA[WhatsApp UI Interface]
+        SSE[Server-Sent Events]
     end
     
-    subgraph "Backend"
-        C[API Routes]
-        D[Business Logic]
+    subgraph "API Layer"
+        AUTH[Auth & Sessions]
+        ROUTES[API Routes]
+        MIDDLEWARE[Auth Middleware]
+    end
+    
+    subgraph "AI Processing Engine"
+        MEMOS[MemOS v2 Pipeline]
+        AGENTS[Multi-Agent Bootstrap]
+        TASKS[Task Generation v2]
+        MEDIA[Media Processing]
+    end
+    
+    subgraph "WhatsApp Integration"
+        EVO[Evolution API]
+        FED[Federation System]
+        WH[Webhooks Handler]
+        WS[WebSocket Connection]
     end
     
     subgraph "Data Layer"
-        E[(PostgreSQL)]
-        F[(Redis Cache)]
+        SUPA[(Supabase PostgreSQL)]
+        EVODB[(Evolution Databases)]
+        REDIS[(Redis Cache & Sessions)]
     end
     
-    subgraph "External Services"
-        G[WhatsApp/Evolution]
-        H[OpenAI GPT-4]
-        I[S3 Storage]
+    subgraph "Background Processing"
+        WORKERS[Background Workers]
+        QUEUE[Task Queue]
+        SCHEDULER[Temporal Scheduler]
     end
     
-    A --> C
-    C --> D
-    D --> E
-    D --> F
-    D --> G
-    D --> H
-    D --> I
+    UI --> ROUTES
+    WA --> ROUTES
+    ROUTES --> AUTH
+    AUTH --> MIDDLEWARE
+    ROUTES --> MEMOS
+    MEMOS --> AGENTS
+    MEMOS --> TASKS
+    ROUTES --> MEDIA
+    
+    FED --> EVO
+    WH --> ROUTES
+    WS --> UI
+    
+    ROUTES --> SUPA
+    FED --> EVODB
+    AUTH --> REDIS
+    
+    WORKERS --> QUEUE
+    SCHEDULER --> TASKS
+    SSE --> UI
 ```
 
 ## 📈 Resultados Esperados

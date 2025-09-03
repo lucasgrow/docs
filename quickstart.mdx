@@ -1,80 +1,351 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Início Rápido"
+description: "Configure o Eleva AI em menos de 5 minutos e comece a automatizar seu WhatsApp Business"
 ---
 
-## Get started in three steps
+# Início Rápido - Eleva AI
 
-Get your documentation site running locally and make your first customization.
+Configure sua instância do Eleva AI localmente e conecte sua primeira conta WhatsApp em minutos.
 
-### Step 1: Set up your local environment
+## 🚀 Configuração em 3 Passos
+
+### Passo 1: Ambiente Local
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion icon="download" title="Clone o repositório">
+    ```bash
+    # Clone o projeto
+    git clone https://github.com/lucasgrow/eleva-ai-minimal.git
+    cd eleva-ai-minimal
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    # Instalar dependências
+    npm install
+    ```
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+  
+  <Accordion icon="gear" title="Configurar variáveis de ambiente">
+    1. Copie o arquivo de exemplo:
+    ```bash
+    cp .env.local.example .env.local
+    ```
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+    2. Configure as variáveis **obrigatórias** no `.env.local`:
+    ```bash
+    # Supabase (obrigatório)
+    NEXT_PUBLIC_SUPABASE_URL=sua-url-supabase
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-publica
+    SUPABASE_SERVICE_ROLE_KEY=sua-chave-servico
+    
+    # Redis (obrigatório)  
+    REDIS_URL=redis://localhost:6379
+    
+    # IA (obrigatório)
+    OPENAI_API_KEY=sk-sua-chave-openai
+    GROQ_API_KEY=gsk_sua-chave-groq
+    
+    # Sessão (obrigatório)
+    SESSION_SECRET=sua-chave-super-secreta-32-chars
+    WEBHOOK_SECRET=sua-chave-webhook-segura
+    ```
+    
+    <Tip>Veja o [guia completo de variáveis](/eleva-ai/reference/environment-variables) para todas as opções disponíveis.</Tip>
+  </Accordion>
+  
+  <Accordion icon="rocket" title="Iniciar servidor de desenvolvimento">
+    ```bash
+    # Iniciar aplicação
+    npm run dev
+    
+    # Abrir em http://localhost:3000
+    ```
+    
+    <Note>O Turbopack está habilitado por padrão para builds ultrarrápidos!</Note>
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+### Passo 2: Configurar Banco de Dados
 
 <AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+  <Accordion icon="database" title="Setup Supabase">
+    1. **Criar projeto Supabase**:
+       - Acesse [supabase.com](https://supabase.com) 
+       - Crie novo projeto
+       - Copie URL e chaves para o `.env.local`
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
+    2. **Executar migrações** (se disponível):
+    ```bash
+    # Validar configuração
+    npm run validate:setup
+    ```
+  </Accordion>
+  
+  <Accordion icon="server" title="Setup Redis Local">
+    **Opção 1 - Docker (recomendado)**:
+    ```bash
+    docker run -d -p 6379:6379 redis:alpine
+    ```
+    
+    **Opção 2 - Instalação nativa**:
+    ```bash
+    # macOS
+    brew install redis
+    redis-server
+    
+    # Ubuntu
+    sudo apt install redis-server
+    sudo systemctl start redis
+    ```
+    
+    **Testar conexão**:
+    ```bash
+    redis-cli ping
+    # Deve retornar: PONG
+    ```
   </Accordion>
 </AccordionGroup>
 
-### Step 3: Go live
+### Passo 3: Conectar WhatsApp
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+<AccordionGroup>
+  <Accordion icon="whatsapp" title="Configurar Evolution API">
+    <Warning>
+    **IMPORTANTE**: Com o Sistema de Federação, você **NÃO precisa configurar variáveis Evolution diretamente**. Tudo é gerenciado pelo Supabase.
+    </Warning>
+    
+    1. **No painel Supabase**, adicione seu banco Evolution:
+    ```sql
+    INSERT INTO evolution_databases (
+      id, name, database_url, api_url, api_key, ws_url, is_active
+    ) VALUES (
+      gen_random_uuid(),
+      'meu-evolution-server',
+      'postgresql://user:pass@evolution-server.com:5432/evolution',
+      'https://api-evolution-server.com',
+      'sua-api-key-evolution',
+      'wss://ws-evolution-server.com',
+      true
+    );
+    ```
+    
+    2. **Associar instância WhatsApp**:
+    ```sql
+    INSERT INTO instances (
+      id, account_id, evolution_database_id, 
+      evolution_instance_name, evolution_instance_id
+    ) VALUES (
+      gen_random_uuid(),
+      'seu-account-id',
+      'evolution-database-id-criado-acima',
+      'minha-empresa-whatsapp',
+      123
+    );
+    ```
+  </Accordion>
+  
+  <Accordion icon="qrcode" title="Conectar WhatsApp Business">
+    1. **Acessar painel**: http://localhost:3000
+    2. **Fazer login** com usuário admin
+    3. **Gerar QR Code** na seção WhatsApp
+    4. **Escanear** com WhatsApp Business no celular
+    5. **Aguardar** confirmação de conexão
+    
+    <Tip>O processo de conexão leva cerca de 30 segundos após escanear o QR Code.</Tip>
+  </Accordion>
+</AccordionGroup>
 
-## Next steps
+## ✅ Validação da Instalação
 
-Now that you have your docs running, explore these key features:
+Após seguir todos os passos, valide se tudo está funcionando:
+
+<Steps>
+  <Step title="Verificar Aplicação">
+    Acesse http://localhost:3000 e veja a tela de login
+  </Step>
+  
+  <Step title="Testar APIs">
+    ```bash
+    # Health check
+    curl http://localhost:3000/api/health
+    
+    # Deve retornar: {"status":"ok"}
+    ```
+  </Step>
+  
+  <Step title="Verificar Redis">
+    ```bash
+    # Limpar cache se necessário
+    npm run flush:redis
+    ```
+  </Step>
+  
+  <Step title="Testar IA">
+    No painel, envie uma mensagem de teste e veja se a IA processa corretamente
+  </Step>
+</Steps>
+
+## 🎯 Exemplos Práticos
+
+### 1. Primeira Conversa Automatizada
+
+<Tabs>
+  <Tab title="Mensagem Manual">
+    1. Acesse **WhatsApp Interface** no painel
+    2. Selecione um contato existente
+    3. Digite uma mensagem
+    4. Observe o sistema **gerar tarefas automaticamente**
+  </Tab>
+  
+  <Tab title="Processamento de Mídia">
+    1. Envie um **áudio** para o WhatsApp Business
+    2. Veja a **transcrição automática** aparecer
+    3. Envie uma **imagem**
+    4. Observe a **análise visual** sendo gerada
+  </Tab>
+  
+  <Tab title="Gestão de Leads">
+    1. Configure **regras de classificação**
+    2. Veja contatos sendo categorizados como **lead/patient/lost**
+    3. Acompanhe **funil de conversão** no dashboard
+  </Tab>
+</Tabs>
+
+### 2. Testando APIs Diretamente
+
+```bash
+# Listar conversas
+curl -X GET "http://localhost:3000/api/conversations?instance=minha-empresa-whatsapp" \
+  -H "Cookie: session=seu-token-sessao"
+
+# Criar tarefa manual
+curl -X POST "http://localhost:3000/api/tasks" \
+  -H "Content-Type: application/json" \
+  -H "Cookie: session=seu-token-sessao" \
+  -d '{
+    "remote_jid": "5511999999999@s.whatsapp.net",
+    "original_message": "Olá! Como posso ajudar?",
+    "send_at": "2024-09-04T10:00:00Z"
+  }'
+
+# Processar áudio
+curl -X POST "http://localhost:3000/api/transcription?instance=minha-empresa&commit=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messageId": "message-id-here",
+    "remoteJid": "5511999999999@s.whatsapp.net"
+  }'
+```
+
+## 🔧 Scripts Úteis de Desenvolvimento
+
+O projeto inclui diversos scripts para facilitar o desenvolvimento:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Desenvolvimento" icon="code">
+    ```bash
+    # Start rápido com Turbopack
+    npm run dev:fast
+    
+    # Limpar cache e reiniciar
+    npm run dev:clean
+    
+    # Start completo (app + workers)
+    npm run dev:full
+    ```
+  </Card>
+  
+  <Card title="Cache e Limpeza" icon="broom">
+    ```bash
+    # Limpar Redis
+    npm run flush:redis
+    
+    # Limpar tudo (Next.js + Redis)
+    npm run clean:full
+    
+    # Aquecer cache Redis
+    npm run warm-redis
+    ```
+  </Card>
+  
+  <Card title="Workers Background" icon="robot">
+    ```bash
+    # Iniciar worker de tarefas
+    npm run worker
+    
+    # Testar processamento de mídia
+    npm run test:media-complete
+    ```
+  </Card>
+  
+  <Card title="Validação e Testes" icon="check">
+    ```bash
+    # Validar configuração
+    npm run validate:setup
+    
+    # Executar linter
+    npm run lint
+    
+    # Testes do sistema IA
+    npm run test:bootstrap
+    ```
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## 🚨 Solução de Problemas
+
+<AccordionGroup>
+  <Accordion icon="exclamation-triangle" title="Erro de Conexão Redis">
+    **Erro**: `Connection refused to Redis`
+    
+    **Solução**:
+    1. Verificar se Redis está rodando: `redis-cli ping`
+    2. Verificar URL no `.env.local`: `REDIS_URL=redis://localhost:6379`
+    3. Reiniciar Redis: `docker restart <redis-container>` ou `sudo systemctl restart redis`
+  </Accordion>
+  
+  <Accordion icon="database" title="Erro de Conexão Supabase">
+    **Erro**: `Invalid Supabase URL or Key`
+    
+    **Solução**:
+    1. Verificar URL e chaves no [dashboard Supabase](https://supabase.com/dashboard)
+    2. Confirmar `SUPABASE_SERVICE_ROLE_KEY` (não anon key)
+    3. Testar conexão direta via curl
+  </Accordion>
+  
+  <Accordion icon="whatsapp" title="QR Code não aparece">
+    **Erro**: QR Code não carrega na interface
+    
+    **Solução**:
+    1. Verificar se Evolution API está acessível
+    2. Confirmar configuração no Supabase `evolution_databases`
+    3. Verificar logs do console: `NEXT_PUBLIC_DEBUG_MODE=true`
+    4. Testar endpoint: `/api/whatsapp/qrcode?instance=nome-instancia`
+  </Accordion>
+</AccordionGroup>
+
+## 📚 Próximos Passos
+
+Agora que sua instalação está funcionando:
+
+<CardGroup cols={2}>
+  <Card title="Configurar IA Avançada" icon="brain" href="/eleva-ai/features/ai/memory-system">
+    Configure o sistema MemOS v2 e multi-agente bootstrap
+  </Card>
+  
+  <Card title="Múltiplas Instâncias" icon="layer-group" href="/eleva-ai/architecture/federation-system">
+    Aprenda a gerenciar múltiplos WhatsApp Business
+  </Card>
+  
+  <Card title="Deploy Produção" icon="cloud" href="/eleva-ai/guides/deployment">
+    Configure ambiente de produção com Docker
+  </Card>
+  
+  <Card title="Personalizar Automação" icon="robot" href="/eleva-ai/features/automation/tasks">
+    Crie regras e workflows personalizados
+  </Card>
+</CardGroup>
+
+---
+
+<Info>
+**Precisa de ajuda?** Acesse nosso [guia de troubleshooting](/eleva-ai/guides/troubleshooting) ou [documentação da API](/eleva-ai/api/introduction).
+</Info>
